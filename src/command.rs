@@ -1,11 +1,14 @@
 
 pub mod run {
-    use std::{process::Command, str::from_utf8};
-    pub fn run_command(command: &str) -> String {
-        let output = Command::new(command)
-            .arg("")
+    use std::{process::{Command, Output}};
+    pub fn run_command(command: &str) -> Output {
+        log::debug!("Running command {}", command);
+        let output = Command::new("/bin/sh")
+            .arg("-c")
+            .arg(command)
             .output()
             .expect("Failed to execute command");
-        String::from_utf8(output.stdout).unwrap()
+        log::debug!("Completed command {} with result {:?}", command, output);
+        output
     }
 }

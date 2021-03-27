@@ -33,7 +33,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                     TextView::new("Command output")
                         .with_name("command_output")
                 ))
-            .child(FlexiLoggerView::scrollable())
+                .child(TextView::new("Command error")
+                    .with_name("command_error"))
+                .child(FlexiLoggerView::scrollable())
         )
             .title("manette")
     );
@@ -44,8 +46,14 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 }
 
 fn user_input(s: &mut Cursive, command: &str) {
+    let command_output = run::run_command(command);
+    let stdout = String::from_utf8(command_output.stdout).unwrap();
+    let stderr = String::from_utf8(command_output.stderr).unwrap();
     s.call_on_name("command_output", |view: &mut TextView| {
-        view.set_content(run::run_command(command));
+        view.set_content(stdout);
+    });
+    s.call_on_name("command_error", |view: &mut TextView| {
+        view.set_content(stderr);
     });
 }
 
