@@ -1,6 +1,6 @@
 use std::error::Error;
 use cursive::{Cursive, CursiveExt};
-use cursive::views::{DummyView, LinearLayout, Panel, EditView, TextView, ResizedView};
+use cursive::views::{DummyView, LinearLayout, Panel, EditView, TextView, ResizedView, ScrollView};
 use cursive_core::view::Nameable;
 use cursive_flexi_logger_view::FlexiLoggerView;
 use flexi_logger::{Logger, LogTarget};
@@ -30,9 +30,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 )
                 .child(DummyView)
                 .child(ResizedView::with_full_screen(
+                    ScrollView::new(
                     TextView::new("Command output")
                         .with_name("command_output")
-                ))
+                )))
                 .child(TextView::new("Command error")
                     .with_name("command_error"))
                 .child(FlexiLoggerView::scrollable())
@@ -54,6 +55,9 @@ fn user_input(s: &mut Cursive, command: &str) {
     });
     s.call_on_name("command_error", |view: &mut TextView| {
         view.set_content(stderr);
+    });
+    s.call_on_name("command_input", |view: &mut EditView| {
+        view.set_content("");
     });
 }
 
