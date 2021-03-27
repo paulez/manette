@@ -1,5 +1,6 @@
 use std::error::Error;
 use cursive::{Cursive, CursiveExt};
+use cursive::theme::{Color, PaletteColor, Theme};
 use cursive::views::{DummyView, LinearLayout, Panel, EditView, TextView, ResizedView, ScrollView};
 use cursive_core::view::Nameable;
 use cursive_flexi_logger_view::FlexiLoggerView;
@@ -21,6 +22,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         .start()
         .expect("failed to initialize logger!");
 
+    let theme = custom_theme_from_cursive(&siv);
+    siv.set_theme(theme);
+    siv.add_global_callback('q', |s| s.quit());
     siv.add_layer(
         Panel::new(
         LinearLayout::vertical()
@@ -40,8 +44,6 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         )
             .title("manette")
     );
-    siv.add_global_callback('q', |s| s.quit());
-    log::info!("test log message");
     siv.run();
     Ok(())
 }
@@ -59,6 +61,16 @@ fn user_input(s: &mut Cursive, command: &str) {
     s.call_on_name("command_input", |view: &mut EditView| {
         view.set_content("");
     });
+}
+
+
+fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
+    // We'll return the current theme with a small modification.
+    let mut theme = siv.current_theme().clone();
+
+    theme.palette[PaletteColor::Background] = Color::TerminalDefault;
+
+    theme
 }
 
 pub struct Config {
