@@ -6,7 +6,7 @@ pub mod run {
         log::debug!("Running command {}", command);
         match tokens[0] {
             "cd" => {
-                run_cd(command, tokens)
+                run_cd(tokens[0], tokens[1..].to_vec())
             }
             _ => {
                 let output = Command::new("/bin/sh")
@@ -28,8 +28,9 @@ pub mod run {
     }
 
     fn run_cd(command: &str, params: Vec<&str>) -> Result<Output, std::io::Error>{
+        log::debug!("Running cd: {} to {:?}", command, &params);
         let output = Command::new(command)
-            .args(params)
+            .args(&params)
             .output();
         match output {
             Ok(output) => {
