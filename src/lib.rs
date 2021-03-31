@@ -12,8 +12,9 @@ use crate::command::run;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
-    let user_input= |s: &mut Cursive, command: &str| {
-        let command_output = run::run_command(command);
+    let run_state = RunState::new();
+    let user_input= move |s: &mut Cursive, command: &str| {
+        let command_output = run::run_command(command, &run_state);
         let stdout: String;
         let stderr: String;
         match command_output {
@@ -38,7 +39,6 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     };
 
     let mut siv = Cursive::new();
-    let run_state = RunState::new();
 
     Logger::with_env_or_str("info, manette = debug")
         .log_target(LogTarget::FileAndWriter(

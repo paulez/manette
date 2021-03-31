@@ -1,12 +1,16 @@
 
 pub mod run {
     use std::{process::{Command, Output}};
-    pub fn run_command(command: &str) -> Result<Output, std::io::Error> {
+    use std::env;
+    use std::path::Path;
+
+    use crate::RunState;
+    pub fn run_command(command: &str, runstate: &RunState) -> Result<Output, std::io::Error> {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens[0] {
             "cd" => {
-                run_cd(tokens[0], tokens[1..].to_vec())
+                run_cd(tokens[0], tokens[1..].to_vec(), &runstate)
             }
             _ => {
                 let output = Command::new("/bin/sh")
@@ -27,8 +31,24 @@ pub mod run {
         }
     }
 
-    fn run_cd(command: &str, params: Vec<&str>) -> Result<Output, std::io::Error>{
+    fn run_cd(command: &str, mut params: Vec<&str>, runstate: &RunState) -> Result<Output, std::io::Error>{
         log::debug!("Running cd: {} to {:?}", command, &params);
+        match params.first() {
+            Some(path) => {
+                let new_path = Path::new(path);
+                log::debug!("Changing dir to {:?}", new_path);
+                match env::set_current_dir(new_path) {
+                    Ok(result) => {
+                        log::info!("Changed dir to {:?}", new_path);
+                    },
+                    Err(_) => {
+                        log::error!("Failed to change dir");
+                    }
+                };
+            },
+            None => log::error!("Please provide a patch to change to"),
+        };
+
         let output = Command::new(command)
             .args(&params)
             .output();
