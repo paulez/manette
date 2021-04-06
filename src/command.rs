@@ -5,7 +5,7 @@ pub mod run {
     use std::path::Path;
 
     use crate::RunState;
-    pub fn run_command(command: &str, runstate: &RunState) -> Result<Output, std::io::Error> {
+    pub fn run_command(command: &str, runstate: &RunState) -> Result<CommandResult, std::io::Error> {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens[0] {
@@ -20,7 +20,7 @@ pub mod run {
                 match output {
                     Ok(output) => {
                         log::debug!("Completed command {} with result {:?}", command, output);
-                        Ok(output)
+                        Ok(CommandResult::from_output(output))
                     }
                     Err(output) => {
                         log::error!("Error running {} with result {:?}", command, output);
@@ -31,7 +31,7 @@ pub mod run {
         }
     }
 
-    fn run_cd(command: &str, mut params: Vec<&str>, runstate: &RunState) -> Result<Output, std::io::Error>{
+    fn run_cd(command: &str, mut params: Vec<&str>, runstate: &RunState) -> Result<CommandResult, std::io::Error>{
         log::debug!("Running cd: {} to {:?}", command, &params);
         match params.first() {
             Some(path) => {
@@ -40,28 +40,41 @@ pub mod run {
                 match env::set_current_dir(new_path) {
                     Ok(result) => {
                         log::info!("Changed dir to {:?}", new_path);
+                        Ok(CommandResult{
+                            output: String::from(format!("Changed dir to {:?}", new_path)),
+                            error_output: String::from(""),
+                        })
                     },
-                    Err(_) => {
+                    Err(error) => {
                         log::error!("Failed to change dir");
+                        Err(error)
                     }
-                };
+                }
             },
-            None => log::error!("Please provide a patch to change to"),
-        };
-
-        let output = Command::new(command)
-            .args(&params)
-            .output();
-        match output {
-            Ok(output) => {
-                log::debug!("Completed command {} with result {:?}", command, output);
-                Ok(output)
+            None => {
+                log::error!("Please provide a path to change to");
+                Ok(CommandResult{
+                    output: String::from(""),
+                    error_output: String::from("Please provide a path to change to"),
+                })
             }
-            Err(output) => {
-                log::error!("Error running {} with result {:?}", command, output);
-                Err(output)
+        }
+    }
+
+    pub struct CommandResult {
+        pub output: String,
+        pub error_output: String,
+    }
+
+    impl  CommandResult {
+
+        fn from_output(output: Output) -> CommandResult {
+            CommandResult{
+                output: String::from_utf8(output.stdout).unwrap(),
+                error_output: String::from_utf8(output.stderr).unwrap(),
             }
         }
     }
 }
+
 

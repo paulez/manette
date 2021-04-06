@@ -14,13 +14,13 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 
     let run_state = RunState::new();
     let user_input= move |s: &mut Cursive, command: &str| {
-        let command_output = run::run_command(command, &run_state);
+        let command_result = run::run_command(command, &run_state);
         let stdout: String;
         let stderr: String;
-        match command_output {
-            Ok(output) => {
-                stdout = String::from_utf8(output.stdout).unwrap();
-                stderr = String::from_utf8(output.stderr).unwrap();
+        match command_result {
+            Ok(result) => {
+                stdout = result.output;
+                stderr = result.error_output;
             }
             Err(output) => {
                 stdout = String::from("");
