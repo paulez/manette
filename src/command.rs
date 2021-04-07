@@ -47,7 +47,8 @@ pub mod run {
                         run_ls(s);
                     }
                     Err(error) => {
-                        log::error!("Failed to change dir");
+                        log::error!("Failed to change dir {:?}", error);
+                        update::show_error(s, format!("Failed to change dir {:?}", error))
                     }
                 }
             }
@@ -58,18 +59,20 @@ pub mod run {
         }
     }
 
-    fn run_ls(s: &mut Cursive) -> Result<CommandResult, std::io::Error> {
-        let mut paths: Vec<String> = fs::read_dir("./")?
-            .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
-            .map(|path| path.strip_prefix("./").unwrap().to_string())
-            .collect();
-        paths.sort();
-        update::file_list_view(s, paths);
-        Ok(CommandResult {
-            //output: paths.join("\n"),
-            output: String::from(""),
-            error_output: String::from(""),
-        })
+    fn run_ls(s: &mut Cursive) {
+        match fs::read_dir("./") {
+            Ok(paths) => {
+                let mut path_list: Vec<String> = paths
+                    .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
+                    .map(|path| path.strip_prefix("./").unwrap().to_string())
+                    .collect();
+                path_list.sort();
+                update::file_list_view(s, path_list);
+            },
+            Err(error) => {
+                update::show_error(s, error.to_string());
+            }
+        }
     }
 
     pub struct CommandResult {

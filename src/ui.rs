@@ -30,16 +30,9 @@ pub mod update {
     }
 
     fn clear_output_layers(layout: &mut LinearLayout) {
-        let children_names = ["command_output", "command_error", "filelist_view"];
-        for child_name in &children_names {
-            match layout.find_child_from_name(child_name) {
-                Some(child_index) => {
-                    layout.remove_child(child_index);
-                },
-                None => {
-                    log::error!("Cannot find {} child", child_name);
-                },
-            }
+        for i in 0..layout.len() + 1 {
+            log::debug!("Removing child {}", i);
+            layout.remove_child(i);
         }
     }
 }
