@@ -41,10 +41,7 @@ pub mod run {
                 match env::set_current_dir(new_path) {
                     Ok(result) => {
                         log::info!("Changed dir to {:?}", new_path);
-                        Ok(CommandResult{
-                            output: String::from(format!("Changed dir to {:?}", new_path)),
-                            error_output: String::from(""),
-                        })
+                        run_ls("./", Vec::new(), &runstate)
                     },
                     Err(error) => {
                         log::error!("Failed to change dir");
