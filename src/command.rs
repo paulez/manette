@@ -1,23 +1,20 @@
-
 pub mod run {
-    use std::{process::{Command, Output}};
     use std::env;
     use std::fs;
     use std::path::{Path, PathBuf};
+    use std::process::{Command, Output};
 
     use crate::RunState;
-    pub fn run_command(command: &str, runstate: &RunState) -> Result<CommandResult, std::io::Error> {
+    pub fn run_command(
+        command: &str,
+        runstate: &RunState,
+    ) -> Result<CommandResult, std::io::Error> {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens[0] {
-            "cd" => {
-                run_cd(tokens[0], tokens[1..].to_vec(), &runstate)
-            }
+            "cd" => run_cd(tokens[0], tokens[1..].to_vec(), &runstate),
             _ => {
-                let output = Command::new("/bin/sh")
-                    .arg("-c")
-                    .arg(command)
-                    .output();
+                let output = Command::new("/bin/sh").arg("-c").arg(command).output();
                 match output {
                     Ok(output) => {
                         log::debug!("Completed command {} with result {:?}", command, output);
@@ -32,7 +29,11 @@ pub mod run {
         }
     }
 
-    fn run_cd(command: &str, mut params: Vec<&str>, runstate: &RunState) -> Result<CommandResult, std::io::Error>{
+    fn run_cd(
+        command: &str,
+        mut params: Vec<&str>,
+        runstate: &RunState,
+    ) -> Result<CommandResult, std::io::Error> {
         log::debug!("Running cd: {} to {:?}", command, &params);
         match params.first() {
             Some(path) => {
@@ -42,16 +43,16 @@ pub mod run {
                     Ok(result) => {
                         log::info!("Changed dir to {:?}", new_path);
                         run_ls("./", Vec::new(), &runstate)
-                    },
+                    }
                     Err(error) => {
                         log::error!("Failed to change dir");
                         Err(error)
                     }
                 }
-            },
+            }
             None => {
                 log::error!("Please provide a path to change to");
-                Ok(CommandResult{
+                Ok(CommandResult {
                     output: String::from(""),
                     error_output: String::from("Please provide a path to change to"),
                 })
@@ -59,7 +60,11 @@ pub mod run {
         }
     }
 
-    fn run_ls(command: &str, mut_params: Vec<&str>, runstate: &RunState) -> Result<CommandResult, std::io::Error>{
+    fn run_ls(
+        command: &str,
+        mut_params: Vec<&str>,
+        runstate: &RunState,
+    ) -> Result<CommandResult, std::io::Error> {
         let mut paths: Vec<String> = fs::read_dir("./")?
             .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
             .map(|path| {
@@ -71,7 +76,7 @@ pub mod run {
             })
             .collect();
         paths.sort();
-        Ok(CommandResult{
+        Ok(CommandResult {
             output: String::from(paths.join("\n")),
             error_output: String::from(""),
         })
@@ -82,15 +87,12 @@ pub mod run {
         pub error_output: String,
     }
 
-    impl  CommandResult {
-
+    impl CommandResult {
         fn from_output(output: Output) -> CommandResult {
-            CommandResult{
+            CommandResult {
                 output: String::from_utf8(output.stdout).unwrap(),
                 error_output: String::from_utf8(output.stderr).unwrap(),
             }
         }
     }
 }
-
-

@@ -1,20 +1,19 @@
-use std::{error::Error, path::PathBuf, env};
 use clap::ArgMatches;
-use cursive::{Cursive, CursiveExt};
 use cursive::theme::{Color, PaletteColor, Theme};
-use cursive::views::{DummyView, LinearLayout, Panel, EditView, TextView, ResizedView, ScrollView};
+use cursive::views::{DummyView, EditView, LinearLayout, Panel, ResizedView, ScrollView, TextView};
+use cursive::{Cursive, CursiveExt};
 use cursive_core::view::Nameable;
 use cursive_flexi_logger_view::FlexiLoggerView;
-use flexi_logger::{Logger, LogTarget};
+use flexi_logger::{LogTarget, Logger};
+use std::{env, error::Error, path::PathBuf};
 
 mod command;
 
 use crate::command::run;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-
     let run_state = RunState::new();
-    let user_input= move |s: &mut Cursive, command: &str| {
+    let user_input = move |s: &mut Cursive, command: &str| {
         let command_result = run::run_command(command, &run_state);
         let stdout: String;
         let stderr: String;
@@ -55,27 +54,20 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     siv.set_theme(theme);
     siv.add_global_callback('q', |s| s.quit());
     let mut layout = LinearLayout::vertical()
-        .child(EditView::new()
-               .on_submit(user_input)
-               .with_name("command_input")
+        .child(
+            EditView::new()
+                .on_submit(user_input)
+                .with_name("command_input"),
         )
         .child(DummyView)
-        .child(ResizedView::with_full_screen(
-            ScrollView::new(
-                TextView::new("Command output")
-                    .with_name("command_output")
-            )))
-        .child(TextView::new("Command error")
-               .with_name("command_error"));
+        .child(ResizedView::with_full_screen(ScrollView::new(
+            TextView::new("Command output").with_name("command_output"),
+        )))
+        .child(TextView::new("Command error").with_name("command_error"));
     if config.debug {
-        layout.add_child(
-            FlexiLoggerView::scrollable()
-        );
+        layout.add_child(FlexiLoggerView::scrollable());
     }
-    siv.add_layer(
-        Panel::new(layout)
-            .title("manette")
-    );
+    siv.add_layer(Panel::new(layout).title("manette"));
     siv.run();
     Ok(())
 }
@@ -96,9 +88,7 @@ pub struct Config {
 impl Config {
     pub fn new(matches: &ArgMatches) -> Result<Config, &'static str> {
         let debug = matches.occurrences_of("debug") > 0;
-        Ok(Config {
-            debug,
-        })
+        Ok(Config { debug })
     }
 }
 
@@ -109,6 +99,6 @@ pub struct RunState {
 impl RunState {
     fn new() -> RunState {
         let current_dir: PathBuf = env::current_dir().unwrap();
-        RunState {current_dir}
+        RunState { current_dir }
     }
 }

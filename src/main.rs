@@ -1,4 +1,4 @@
-use clap::{Arg, App};
+use clap::{App, Arg};
 use std::env;
 use std::process;
 
@@ -9,10 +9,12 @@ fn main() {
         .version("0.1")
         .author("Paul Ezvan <paul@ezvan.fr>")
         .about("Terminal file explorer and command runner")
-        .arg(Arg::with_name("debug")
-             .long("debug")
-             .short("d")
-             .help("Enable debug"))
+        .arg(
+            Arg::with_name("debug")
+                .long("debug")
+                .short("d")
+                .help("Enable debug"),
+        )
         .get_matches();
 
     let config = Config::new(&matches).unwrap_or_else(|err| {
