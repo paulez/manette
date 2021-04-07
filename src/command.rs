@@ -60,9 +60,17 @@ pub mod run {
     }
 
     fn run_ls(command: &str, mut_params: Vec<&str>, runstate: &RunState) -> Result<CommandResult, std::io::Error>{
-        let paths: Vec<_> = fs::read_dir("./")?
+        let mut paths: Vec<String> = fs::read_dir("./")?
             .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
+            .map(|path| {
+                if path.starts_with("./") {
+                    path[2..].to_string()
+                } else {
+                    path
+                }
+            })
             .collect();
+        paths.sort();
         Ok(CommandResult{
             output: String::from(paths.join("\n")),
             error_output: String::from(""),
