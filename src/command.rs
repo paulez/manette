@@ -1,18 +1,16 @@
 pub mod run {
     use std::env;
     use std::fs;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use std::process::{Command, Output};
 
-    use crate::RunState;
     pub fn run_command(
         command: &str,
-        runstate: &RunState,
     ) -> Result<CommandResult, std::io::Error> {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens[0] {
-            "cd" => run_cd(tokens[0], tokens[1..].to_vec(), &runstate),
+            "cd" => run_cd(tokens[0], tokens[1..].to_vec()),
             _ => {
                 let output = Command::new("/bin/sh").arg("-c").arg(command).output();
                 match output {
@@ -31,8 +29,7 @@ pub mod run {
 
     fn run_cd(
         command: &str,
-        mut params: Vec<&str>,
-        runstate: &RunState,
+        params: Vec<&str>,
     ) -> Result<CommandResult, std::io::Error> {
         log::debug!("Running cd: {} to {:?}", command, &params);
         match params.first() {
@@ -40,9 +37,9 @@ pub mod run {
                 let new_path = Path::new(path);
                 log::debug!("Changing dir to {:?}", new_path);
                 match env::set_current_dir(new_path) {
-                    Ok(result) => {
+                    Ok(_) => {
                         log::info!("Changed dir to {:?}", new_path);
-                        run_ls("./", Vec::new(), &runstate)
+                        run_ls()
                     }
                     Err(error) => {
                         log::error!("Failed to change dir");
@@ -60,24 +57,14 @@ pub mod run {
         }
     }
 
-    fn run_ls(
-        command: &str,
-        mut_params: Vec<&str>,
-        runstate: &RunState,
-    ) -> Result<CommandResult, std::io::Error> {
+    fn run_ls() -> Result<CommandResult, std::io::Error> {
         let mut paths: Vec<String> = fs::read_dir("./")?
             .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
-            .map(|path| {
-                if path.starts_with("./") {
-                    path[2..].to_string()
-                } else {
-                    path
-                }
-            })
+            .map(|path| path.strip_prefix("./").unwrap().to_string())
             .collect();
         paths.sort();
         Ok(CommandResult {
-            output: String::from(paths.join("\n")),
+            output: paths.join("\n"),
             error_output: String::from(""),
         })
     }

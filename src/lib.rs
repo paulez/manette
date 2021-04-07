@@ -12,9 +12,8 @@ mod command;
 use crate::command::run;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let run_state = RunState::new();
     let user_input = move |s: &mut Cursive, command: &str| {
-        let command_result = run::run_command(command, &run_state);
+        let command_result = run::run_command(command);
         let stdout: String;
         let stderr: String;
         match command_result {

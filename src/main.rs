@@ -1,5 +1,4 @@
 use clap::{App, Arg};
-use std::env;
 use std::process;
 
 use manette::Config;
