@@ -8,12 +8,13 @@ use flexi_logger::{LogTarget, Logger};
 use std::{env, error::Error, path::PathBuf};
 
 mod command;
+mod ui;
 
 use crate::command::run;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let user_input = move |s: &mut Cursive, command: &str| {
-        let command_result = run::run_command(command);
+        let command_result = run::run_command(command, s);
         let stdout: String;
         let stderr: String;
         match command_result {
@@ -54,15 +55,23 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     siv.add_global_callback('q', |s| s.quit());
     let mut layout = LinearLayout::vertical()
         .child(
-            EditView::new()
-                .on_submit(user_input)
-                .with_name("command_input"),
-        )
-        .child(DummyView)
-        .child(ResizedView::with_full_screen(ScrollView::new(
-            TextView::new("Command output").with_name("command_output"),
-        )))
-        .child(TextView::new("Command error").with_name("command_error"));
+            LinearLayout::vertical()
+                .child(
+                    EditView::new()
+                        .on_submit(user_input)
+                        .with_name("command_input"),
+                )
+                .child(DummyView)
+                .child(
+                    ResizedView::with_full_screen(
+                        ScrollView::new(
+                    TextView::new("Command output").with_name("command_output"),
+                        )
+                    )
+                )
+                .child(TextView::new("Command error").with_name("command_error"))
+                .with_name("command_layout")
+        );
     if config.debug {
         layout.add_child(FlexiLoggerView::scrollable());
     }

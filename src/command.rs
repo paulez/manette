@@ -1,16 +1,20 @@
 pub mod run {
+    use cursive::Cursive;
+
+    use crate::ui::update;
+
     use std::env;
     use std::fs;
     use std::path::Path;
     use std::process::{Command, Output};
 
     pub fn run_command(
-        command: &str,
+        command: &str, s: &mut Cursive,
     ) -> Result<CommandResult, std::io::Error> {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens[0] {
-            "cd" => run_cd(tokens[0], tokens[1..].to_vec()),
+            "cd" => run_cd(tokens[0], tokens[1..].to_vec(), s),
             _ => {
                 let output = Command::new("/bin/sh").arg("-c").arg(command).output();
                 match output {
@@ -30,6 +34,7 @@ pub mod run {
     fn run_cd(
         command: &str,
         params: Vec<&str>,
+        s: &mut Cursive,
     ) -> Result<CommandResult, std::io::Error> {
         log::debug!("Running cd: {} to {:?}", command, &params);
         match params.first() {
@@ -39,7 +44,7 @@ pub mod run {
                 match env::set_current_dir(new_path) {
                     Ok(_) => {
                         log::info!("Changed dir to {:?}", new_path);
-                        run_ls()
+                        run_ls(s)
                     }
                     Err(error) => {
                         log::error!("Failed to change dir");
@@ -57,14 +62,16 @@ pub mod run {
         }
     }
 
-    fn run_ls() -> Result<CommandResult, std::io::Error> {
+    fn run_ls(s: &mut Cursive) -> Result<CommandResult, std::io::Error> {
         let mut paths: Vec<String> = fs::read_dir("./")?
             .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
             .map(|path| path.strip_prefix("./").unwrap().to_string())
             .collect();
         paths.sort();
+        update::add_file_list_view(s, paths);
         Ok(CommandResult {
-            output: paths.join("\n"),
+            //output: paths.join("\n"),
+            output: String::from(""),
             error_output: String::from(""),
         })
     }
