@@ -2,7 +2,8 @@
 pub mod run {
     use std::{process::{Command, Output}};
     use std::env;
-    use std::path::Path;
+    use std::fs;
+    use std::path::{Path, PathBuf};
 
     use crate::RunState;
     pub fn run_command(command: &str, runstate: &RunState) -> Result<CommandResult, std::io::Error> {
@@ -62,7 +63,13 @@ pub mod run {
     }
 
     fn run_ls(command: &str, mut_params: Vec<&str>, runstate: &RunState) -> Result<CommandResult, std::io::Error>{
-        
+        let paths: Vec<_> = fs::read_dir("./")?
+            .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
+            .collect();
+        Ok(CommandResult{
+            output: String::from(paths.join("\n")),
+            error_output: String::from(""),
+        })
     }
 
     pub struct CommandResult {
