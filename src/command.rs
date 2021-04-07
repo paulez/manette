@@ -61,6 +61,10 @@ pub mod run {
         }
     }
 
+    fn run_ls(command: &str, mut_params: Vec<&str>, runstate: &RunState) -> Result<CommandResult, std::io::Error>{
+        
+    }
+
     pub struct CommandResult {
         pub output: String,
         pub error_output: String,
