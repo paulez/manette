@@ -14,25 +14,7 @@ use crate::command::run;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let user_input = move |s: &mut Cursive, command: &str| {
-        let command_result = run::run_command(command, s);
-        let stdout: String;
-        let stderr: String;
-        match command_result {
-            Ok(result) => {
-                stdout = result.output;
-                stderr = result.error_output;
-            }
-            Err(output) => {
-                stdout = String::from("");
-                stderr = output.to_string();
-            }
-        }
-        s.call_on_name("command_output", |view: &mut TextView| {
-            view.set_content(stdout);
-        });
-        s.call_on_name("command_error", |view: &mut TextView| {
-            view.set_content(stderr);
-        });
+        run::run_command(command, s);
         s.call_on_name("command_input", |view: &mut EditView| {
             view.set_content("");
         });

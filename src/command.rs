@@ -10,7 +10,7 @@ pub mod run {
 
     pub fn run_command(
         command: &str, s: &mut Cursive,
-    ) -> Result<CommandResult, std::io::Error> {
+    ) {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens[0] {
@@ -20,11 +20,11 @@ pub mod run {
                 match output {
                     Ok(output) => {
                         log::debug!("Completed command {} with result {:?}", command, output);
-                        Ok(CommandResult::from_output(output))
+                        let result = CommandResult::from_output(output);
+                        update::command_output(s, result);
                     }
                     Err(output) => {
                         log::error!("Error running {} with result {:?}", command, output);
-                        Err(output)
                     }
                 }
             }
@@ -35,7 +35,7 @@ pub mod run {
         command: &str,
         params: Vec<&str>,
         s: &mut Cursive,
-    ) -> Result<CommandResult, std::io::Error> {
+    ) {
         log::debug!("Running cd: {} to {:?}", command, &params);
         match params.first() {
             Some(path) => {
@@ -44,20 +44,16 @@ pub mod run {
                 match env::set_current_dir(new_path) {
                     Ok(_) => {
                         log::info!("Changed dir to {:?}", new_path);
-                        run_ls(s)
+                        run_ls(s);
                     }
                     Err(error) => {
                         log::error!("Failed to change dir");
-                        Err(error)
                     }
                 }
             }
             None => {
                 log::error!("Please provide a path to change to");
-                Ok(CommandResult {
-                    output: String::from(""),
-                    error_output: String::from("Please provide a path to change to"),
-                })
+                update::show_error(s, String::from("Please provide a path to change to"));
             }
         }
     }
@@ -68,7 +64,7 @@ pub mod run {
             .map(|path| path.strip_prefix("./").unwrap().to_string())
             .collect();
         paths.sort();
-        update::add_file_list_view(s, paths);
+        update::file_list_view(s, paths);
         Ok(CommandResult {
             //output: paths.join("\n"),
             output: String::from(""),
