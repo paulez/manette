@@ -1,12 +1,21 @@
+use clap::{Arg, App};
 use std::env;
 use std::process;
 
 use manette::Config;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let matches = App::new("Manette")
+        .version("0.1")
+        .author("Paul Ezvan <paul@ezvan.fr>")
+        .about("Terminal file explorer and command runner")
+        .arg(Arg::with_name("debug")
+             .long("debug")
+             .short("d")
+             .help("Enable debug"))
+        .get_matches();
 
-    let config = Config::new(&args).unwrap_or_else(|err| {
+    let config = Config::new(&matches).unwrap_or_else(|err| {
         println!("Problem parsing arguments: {}", err);
         process::exit(1);
     });

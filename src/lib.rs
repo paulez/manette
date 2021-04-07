@@ -1,4 +1,5 @@
 use std::{error::Error, path::PathBuf, env};
+use clap::ArgMatches;
 use cursive::{Cursive, CursiveExt};
 use cursive::theme::{Color, PaletteColor, Theme};
 use cursive::views::{DummyView, LinearLayout, Panel, EditView, TextView, ResizedView, ScrollView};
@@ -86,14 +87,15 @@ fn custom_theme_from_cursive(siv: &Cursive) -> Theme {
 }
 
 pub struct Config {
+    debug: bool,
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() > 1 {
-            return Err("No supported argument!");
-        }
-        Ok(Config { })
+    pub fn new(matches: &ArgMatches) -> Result<Config, &'static str> {
+        let debug = matches.occurrences_of("debug") > 0;
+        Ok(Config {
+            debug,
+        })
     }
 }
 

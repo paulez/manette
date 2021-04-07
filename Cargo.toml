@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+clap = "2.33"
 cursive = "0.16"
 cursive_core = "0.2"
 cursive-flexi-logger-view = "^0"
