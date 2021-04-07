@@ -54,23 +54,26 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let theme = custom_theme_from_cursive(&siv);
     siv.set_theme(theme);
     siv.add_global_callback('q', |s| s.quit());
-    siv.add_layer(
-        Panel::new(
-        LinearLayout::vertical()
-                .child(EditView::new()
-                       .on_submit(user_input)
-                       .with_name("command_input")
-                )
-                .child(DummyView)
-                .child(ResizedView::with_full_screen(
-                    ScrollView::new(
-                    TextView::new("Command output")
-                        .with_name("command_output")
-                )))
-                .child(TextView::new("Command error")
-                    .with_name("command_error"))
-                .child(FlexiLoggerView::scrollable())
+    let mut layout = LinearLayout::vertical()
+        .child(EditView::new()
+               .on_submit(user_input)
+               .with_name("command_input")
         )
+        .child(DummyView)
+        .child(ResizedView::with_full_screen(
+            ScrollView::new(
+                TextView::new("Command output")
+                    .with_name("command_output")
+            )))
+        .child(TextView::new("Command error")
+               .with_name("command_error"));
+    if config.debug {
+        layout.add_child(
+            FlexiLoggerView::scrollable()
+        );
+    }
+    siv.add_layer(
+        Panel::new(layout)
             .title("manette")
     );
     siv.run();
