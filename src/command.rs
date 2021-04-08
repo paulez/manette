@@ -4,8 +4,8 @@ pub mod run {
     use crate::ui::update;
 
     use std::env;
-    use std::fs;
-    use std::path::Path;
+    use std::fs::{self, DirEntry};
+    use std::path::{Path, PathBuf};
     use std::process::{Command, Output};
 
     pub fn run_command(
@@ -68,7 +68,13 @@ pub mod run {
                 "./"
             }
             1 => {
-                params[0]
+                match params.first() {
+                    Some(param) => param,
+                    None => {
+                        update::show_error(s, String::from("Please provide one argument"));
+                        return;
+                    }
+                }
             }
             _  => {
                 update::show_error(s, String::from("Please provide one argument"));
@@ -77,15 +83,46 @@ pub mod run {
         };
         match fs::read_dir(dir) {
             Ok(paths) => {
-                let mut path_list: Vec<String> = paths
-                    .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
-                    .map(|path| path.strip_prefix("./").unwrap().to_string())
+
+                let path_list: Result<Vec<DirEntry>, _> = paths.collect();
+                let path_list = match path_list {
+                    Ok(path_list) => path_list,
+                    Err(error) => {
+                        update::show_error(s, error.to_string());
+                        return;
+                    }
+                };
+                let path_list: Vec<PathBuf> = path_list
+                    .into_iter()
+                    .map(|res| res.path())
+                    .map(|path|  {
+                        match path.strip_prefix("./") {
+                            Ok(path_without_prefix) => path_without_prefix.to_path_buf(),
+                            Err(error) => {
+                                log::error!("Cannot remove prefix from {:?}", path);
+                                path
+                            }
+                        }
+                    })
                     .collect();
+
+                let path_list: Result<Vec<String>, _> = path_list
+                    .into_iter()
+                    .map(|path| path.into_os_string().into_string())
+                    .collect();
+                let mut path_list = match path_list {
+                    Ok(path_list) => path_list,
+                    Err(error) => {
+                        update::show_error(s, format!("Error converting path to string: {:?}", error));
+                        return;
+                    }
+                };
                 path_list.sort();
                 update::file_list_view(s, path_list);
             },
             Err(error) => {
                 update::show_error(s, error.to_string());
+                return;
             }
         }
     }
