@@ -84,41 +84,35 @@ pub mod run {
         match fs::read_dir(dir) {
             Ok(paths) => {
 
-                let path_list: Result<Vec<DirEntry>, _> = paths.collect();
-                let path_list = match path_list {
-                    Ok(path_list) => path_list,
-                    Err(error) => {
-                        update::show_error(s, error.to_string());
-                        return;
-                    }
-                };
-                let path_list: Vec<PathBuf> = path_list
-                    .into_iter()
-                    .map(|res| res.path())
-                    .map(|path|  {
-                        match path.strip_prefix("./") {
-                            Ok(path_without_prefix) => path_without_prefix.to_path_buf(),
-                            Err(error) => {
-                                log::error!("Cannot remove prefix from {:?}", path);
-                                path
-                            }
-                        }
-                    })
-                    .collect();
+                let mut path_strings: Vec<String> = Vec::new();
 
-                let path_list: Result<Vec<String>, _> = path_list
-                    .into_iter()
-                    .map(|path| path.into_os_string().into_string())
-                    .collect();
-                let mut path_list = match path_list {
-                    Ok(path_list) => path_list,
-                    Err(error) => {
-                        update::show_error(s, format!("Error converting path to string: {:?}", error));
-                        return;
+                for path in paths {
+                    match path {
+                        Ok(path) => {
+                            let path = path.path();
+                            let path = match path.strip_prefix("./") {
+                                Ok(path_without_prefix) => path_without_prefix.to_path_buf(),
+                                Err(error) => {
+                                    log::error!("Cannot remove prefix from {:?}", path);
+                                    path
+                                }
+                            };
+                            let path = path.into_os_string().into_string();
+                            match path {
+                                Ok(path) => path_strings.push(path.to_string()),
+                                Err(error) => {
+                                    update::show_error(s, format!("Error converting path to string: {:?}", error));
+                                }
+                            }
+                        },
+                        Err(error) => {
+                            update::show_error(s, format!("Error listing path: {:?}", error));
+                        }
                     }
-                };
-                path_list.sort();
-                update::file_list_view(s, path_list);
+                }
+
+                path_strings.sort();
+                update::file_list_view(s, path_strings);
             },
             Err(error) => {
                 update::show_error(s, error.to_string());
