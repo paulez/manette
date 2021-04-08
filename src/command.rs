@@ -90,7 +90,7 @@ pub mod run {
                     match path {
                         Ok(path) => {
                             let path = path.path();
-                            let path = match path.strip_prefix("./") {
+                            let path = match path.strip_prefix(dir) {
                                 Ok(path_without_prefix) => path_without_prefix.to_path_buf(),
                                 Err(error) => {
                                     log::error!("Cannot remove prefix from {:?}", path);
