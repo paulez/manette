@@ -14,7 +14,8 @@ pub mod run {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens[0] {
-            "cd" => run_cd(tokens[0], tokens[1..].to_vec(), s),
+            "cd" => run_cd(tokens[1..].to_vec(), s),
+            "ls" => run_ls(tokens[1..].to_vec(), s),
             _ => {
                 let output = Command::new("/bin/sh").arg("-c").arg(command).output();
                 match output {
@@ -32,11 +33,10 @@ pub mod run {
     }
 
     fn run_cd(
-        command: &str,
         params: Vec<&str>,
         s: &mut Cursive,
     ) {
-        log::debug!("Running cd: {} to {:?}", command, &params);
+        log::debug!("Running cd to {:?}", &params);
         match params.first() {
             Some(path) => {
                 let new_path = Path::new(path);
@@ -44,7 +44,7 @@ pub mod run {
                 match env::set_current_dir(new_path) {
                     Ok(_) => {
                         log::info!("Changed dir to {:?}", new_path);
-                        run_ls(s);
+                        run_ls(["./"].to_vec(), s);
                     }
                     Err(error) => {
                         log::error!("Failed to change dir {:?}", error);
@@ -59,8 +59,23 @@ pub mod run {
         }
     }
 
-    fn run_ls(s: &mut Cursive) {
-        match fs::read_dir("./") {
+    fn run_ls(
+        params: Vec<&str>,
+        s: &mut Cursive
+    ) {
+        let dir = match params.len() {
+            0 => {
+                "./"
+            }
+            1 => {
+                params[0]
+            }
+            _  => {
+                update::show_error(s, String::from("Please provide one argument"));
+                return;
+            }
+        };
+        match fs::read_dir(dir) {
             Ok(paths) => {
                 let mut path_list: Vec<String> = paths
                     .map(|res| res.unwrap().path().into_os_string().into_string().unwrap())
