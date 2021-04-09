@@ -3,6 +3,7 @@ pub mod update {
     use cursive::{Cursive, traits::{Nameable, Scrollable}, views::{ResizedView, ScrollView, TextView}};
     use cursive::views::{LinearLayout, SelectView};
 
+    use crate::command::run;
     use crate::command::run::CommandResult;
 
     pub fn file_list_view(s: &mut Cursive, file_list: Vec<String>) {
@@ -12,6 +13,7 @@ pub mod update {
             select.add_all_str(file_list);
             select.set_on_submit(|s,  selection: &String| {
                 log::debug!("File list: {:?} selected", selection);
+                run::submit_file(s, selection);
             });
             layout.add_child(
                 ResizedView::with_full_screen(

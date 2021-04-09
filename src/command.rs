@@ -3,7 +3,7 @@ pub mod run {
 
     use crate::ui::update;
 
-    use std::env;
+    use std::{env, fs::Metadata};
     use std::fs::{self, DirEntry};
     use std::path::{Path, PathBuf};
     use std::process::{Command, Output};
@@ -28,6 +28,28 @@ pub mod run {
                         log::error!("Error running {} with result {:?}", command, output);
                     }
                 }
+            }
+        }
+    }
+
+    pub fn submit_file(s: &mut Cursive, filename: &String) {
+        let metadata = fs::metadata(filename);
+
+        match metadata {
+            Ok(metadata) => {
+                log::debug!("File metadata: {:?}", metadata);
+                if metadata.is_dir() {
+                    log::debug!("{} is a directory", filename);
+                    run_cd([filename.as_str()].to_vec(), s);
+                } else if metadata.is_file() {
+                    log::debug!("{} is a file", filename);
+                } else {
+                    log::debug!("{} is something else", filename);
+                }
+            },
+            Err(error) => {
+                log::error!("Failed to read metadata {:?}", error);
+                update::show_error(s, format!("Failed to read metadata {:?}", error))
             }
         }
     }
