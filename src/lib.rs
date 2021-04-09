@@ -42,10 +42,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 .with_name("command_input"),
         )
         .child(DummyView)
-        .child(
-            LinearLayout::vertical()
-                .with_name("command_layout")
-        );
+        .child(LinearLayout::vertical().with_name("command_layout"));
     if config.debug {
         layout.add_child(FlexiLoggerView::scrollable());
     }
