@@ -13,19 +13,24 @@ pub mod run {
     ) {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
-        match tokens[0] {
-            "cd" => run_cd(tokens[1..].to_vec(), s),
-            "ls" => run_ls(tokens[1..].to_vec(), s),
-            _ => {
-                let output = Command::new("/bin/sh").arg("-c").arg(command).output();
-                match output {
-                    Ok(output) => {
-                        log::debug!("Completed command {} with result {:?}", command, output);
-                        let result = CommandResult::from_output(output);
-                        update::command_output(s, result);
-                    }
-                    Err(output) => {
-                        log::error!("Error running {} with result {:?}", command, output);
+        match tokens.is_empty() {
+            true => update::show_error(s, format!("Please enter a command.")),
+            false => {
+                match tokens[0] {
+                    "cd" => run_cd(tokens[1..].to_vec(), s),
+                    "ls" => run_ls(tokens[1..].to_vec(), s),
+                    _ => {
+                        let output = Command::new("/bin/sh").arg("-c").arg(command).output();
+                        match output {
+                            Ok(output) => {
+                                log::debug!("Completed command {} with result {:?}", command, output);
+                                let result = CommandResult::from_output(output);
+                                update::command_output(s, result);
+                            }
+                            Err(output) => {
+                                log::error!("Error running {} with result {:?}", command, output);
+                            }
+                        }
                     }
                 }
             }
