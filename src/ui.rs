@@ -10,6 +10,9 @@ pub mod update {
             clear_output_layers(layout);
             let mut select = SelectView::new();
             select.add_all_str(file_list);
+            select.set_on_submit(|s,  selection: &String| {
+                log::debug!("File list: {:?} selected", selection);
+            });
             layout.add_child(
                 ResizedView::with_full_screen(
                     select.scrollable().with_name("filelist_view")
@@ -17,6 +20,8 @@ pub mod update {
             );
         });
     }
+
+
 
     pub fn command_output(s: &mut Cursive, result: CommandResult) {
         s.call_on_name("command_layout", |layout: &mut LinearLayout| {
