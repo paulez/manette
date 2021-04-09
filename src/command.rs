@@ -134,6 +134,14 @@ pub mod run {
                 }
 
                 path_strings.sort();
+                match env::current_dir() {
+                    Ok(current_dir) => {
+                        if current_dir != Path::new("/").to_path_buf() {
+                            path_strings.insert(0, String::from(".."));
+                        }
+                    },
+                    Err(error) => log::error!("Cannot get current directory: {:?}", error),
+                }
                 update::file_list_view(s, path_strings);
             },
             Err(error) => {
