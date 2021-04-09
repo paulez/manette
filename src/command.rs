@@ -12,7 +12,7 @@ pub mod run {
         let tokens: Vec<&str> = command.split_whitespace().collect();
         log::debug!("Running command {}", command);
         match tokens.is_empty() {
-            true => update::show_error(s, format!("Please enter a command.")),
+            true => update::show_error(s, "Please enter a command.".to_string()),
             false => match tokens[0] {
                 "cd" => run_cd(tokens[1..].to_vec(), s),
                 "ls" => run_ls(tokens[1..].to_vec(), s),
@@ -33,7 +33,7 @@ pub mod run {
         }
     }
 
-    pub fn submit_file(s: &mut Cursive, filename: &String) {
+    pub fn submit_file(s: &mut Cursive, filename: &str) {
         let metadata = fs::metadata(filename);
 
         match metadata {
@@ -41,7 +41,7 @@ pub mod run {
                 log::debug!("File metadata: {:?}", metadata);
                 if metadata.is_dir() {
                     log::debug!("{} is a directory", filename);
-                    run_cd([filename.as_str()].to_vec(), s);
+                    run_cd([filename].to_vec(), s);
                 } else if metadata.is_file() {
                     log::debug!("{} is a file", filename);
                 } else {
@@ -74,7 +74,7 @@ pub mod run {
             }
             None => {
                 log::error!("Please provide a path to change to");
-                update::show_error(s, String::from("Please provide a path to change to"));
+                update::show_error(s, "Please provide a path to change to".to_string());
             }
         }
     }
@@ -85,12 +85,12 @@ pub mod run {
             1 => match params.first() {
                 Some(param) => param,
                 None => {
-                    update::show_error(s, String::from("Please provide one argument"));
+                    update::show_error(s, "Please provide one argument".to_string());
                     return;
                 }
             },
             _ => {
-                update::show_error(s, String::from("Please provide one argument"));
+                update::show_error(s, "Please provide one argument".to_string());
                 return;
             }
         };
@@ -134,7 +134,7 @@ pub mod run {
                 match env::current_dir() {
                     Ok(current_dir) => {
                         if current_dir != Path::new("/").to_path_buf() {
-                            path_strings.insert(0, String::from(".."));
+                            path_strings.insert(0, "..".to_string());
                         }
                     }
                     Err(error) => log::error!("Cannot get current directory: {:?}", error),
@@ -143,7 +143,6 @@ pub mod run {
             }
             Err(error) => {
                 update::show_error(s, error.to_string());
-                return;
             }
         }
     }
