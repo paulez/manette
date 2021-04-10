@@ -3,7 +3,7 @@ pub mod run {
 
     use crate::ui::update;
 
-    use std::{env, os::unix::prelude::PermissionsExt};
+    use std::{cmp::Ordering, env, os::unix::prelude::PermissionsExt};
     use std::fs;
     use std::path::Path;
     use std::process::{Command, Output};
@@ -155,7 +155,7 @@ pub mod run {
                     }
                 }
 
-                //path_strings.sort();
+                path_strings.sort();
                 match env::current_dir() {
                     Ok(current_dir) => {
                         if current_dir != Path::new("/").to_path_buf() {
@@ -204,4 +204,24 @@ pub mod run {
         pub filename: String,
         pub filetype: FileType,
     }
+
+    impl Ord for FileEntry {
+        fn cmp(&self, other: &Self) -> Ordering {
+            self.filename.cmp(&other.filename)
+        }
+    }
+
+    impl PartialOrd for FileEntry {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.cmp(other))
+        }
+    }
+
+    impl PartialEq for FileEntry {
+        fn eq(&self, other: &Self) -> bool {
+            self.filename == other.filename
+        }
+    }
+
+    impl Eq for FileEntry {}
 }
