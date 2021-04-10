@@ -117,43 +117,29 @@ pub mod run {
                             match path {
                                 Some(path) => {
                                     let metadata = entry.metadata();
-                                    match metadata {
+                                    let filetype: FileType = match metadata {
                                         Ok(metadata) => {
                                             if metadata.is_dir() {
-                                                path_strings.push(FileEntry {
-                                                    filename: path.to_string(),
-                                                    filetype: FileType::Directory,
-                                                });
+                                                FileType::Directory
                                             } else if metadata.file_type().is_symlink() {
-                                                path_strings.push(FileEntry {
-                                                    filename: path.to_string(),
-                                                    filetype: FileType::Symlink,
-                                                });
+                                                FileType::Symlink
                                             } else if metadata.permissions().mode() & 0o111 != 0 {
-                                                path_strings.push(FileEntry {
-                                                    filename: path.to_string(),
-                                                    filetype: FileType::Executable,
-                                                });
+                                                FileType::Executable
                                             } else if metadata.is_file() {
-                                                path_strings.push(FileEntry {
-                                                    filename: path.to_string(),
-                                                    filetype: FileType::File,
-                                                });
+                                                FileType::File
                                             } else {
-                                                path_strings.push(FileEntry {
-                                                    filename: path.to_string(),
-                                                    filetype: FileType::Unknown,
-                                                });
+                                                FileType::Unknown
                                             }
                                         }
                                         Err(error) => {
                                             log::error!("Cannot get metadata: {:?}", error);
-                                            path_strings.push(FileEntry {
-                                                filename: path.to_string(),
-                                                filetype: FileType::Unknown,
-                                            });
+                                            FileType::Unknown
                                         }
-                                    }
+                                    };
+                                    path_strings.push(FileEntry {
+                                        filename: path.to_string(),
+                                        filetype,
+                                    });
                                 }
                                 None => {
                                     update::show_error(
