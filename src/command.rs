@@ -3,7 +3,7 @@ pub mod run {
 
     use crate::ui::update;
 
-    use std::env;
+    use std::{env, os::unix::prelude::PermissionsExt};
     use std::fs;
     use std::path::Path;
     use std::process::{Command, Output};
@@ -124,10 +124,25 @@ pub mod run {
                                                     filename: path.to_string(),
                                                     filetype: FileType::Directory,
                                                 });
-                                            } else {
+                                            } else if metadata.file_type().is_symlink() {
+                                                path_strings.push(FileEntry {
+                                                    filename: path.to_string(),
+                                                    filetype: FileType::Symlink,
+                                                });
+                                            } else if metadata.permissions().mode() & 0o111 != 0 {
+                                                path_strings.push(FileEntry {
+                                                    filename: path.to_string(),
+                                                    filetype: FileType::Executable,
+                                                });
+                                            } else if metadata.is_file() {
                                                 path_strings.push(FileEntry {
                                                     filename: path.to_string(),
                                                     filetype: FileType::File,
+                                                });
+                                            } else {
+                                                path_strings.push(FileEntry {
+                                                    filename: path.to_string(),
+                                                    filetype: FileType::Unknown,
                                                 });
                                             }
                                         }
@@ -195,6 +210,7 @@ pub mod run {
         Directory,
         Executable,
         File,
+        Symlink,
         Unknown,
     }
 

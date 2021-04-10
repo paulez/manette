@@ -36,6 +36,13 @@ pub mod update {
                             ),
                             file_entry.filename,
                         ),
+                        FileType::Symlink => (
+                            StyledString::styled(
+                                file_entry.filename.clone(),
+                                Color::Dark(BaseColor::Blue),
+                            ),
+                            file_entry.filename,
+                        ),
                         _ => (
                             StyledString::plain(file_entry.filename.clone()),
                             file_entry.filename,
