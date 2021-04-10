@@ -1,5 +1,6 @@
 pub mod run {
-    use cursive::Cursive;
+    use cursive::{Cursive, theme::{BaseColor, Color}};
+    use cursive::utils::markup::StyledString;
 
     use crate::ui::update;
 
@@ -96,12 +97,12 @@ pub mod run {
         };
         match fs::read_dir(dir) {
             Ok(paths) => {
-                let mut path_strings: Vec<String> = Vec::new();
+                let mut path_strings: Vec<FileEntry> = Vec::new();
 
-                for path in paths {
-                    match path {
-                        Ok(path) => {
-                            let path = path.path();
+                for entry in paths {
+                    match entry {
+                        Ok(entry) => {
+                            let path = entry.path();
                             let path = match path.strip_prefix(dir) {
                                 Ok(path_without_prefix) => path_without_prefix.to_path_buf(),
                                 Err(error) => {
@@ -113,13 +114,43 @@ pub mod run {
                                     path
                                 }
                             };
-                            let path = path.into_os_string().into_string();
+                            let path = path.to_str();
                             match path {
-                                Ok(path) => path_strings.push(path.to_string()),
-                                Err(error) => {
+                                Some(path) => {
+                                    let metadata = entry.metadata();
+                                    match metadata {
+                                        Ok(metadata) => {
+                                            if metadata.is_dir() {
+                                                path_strings.push(
+                                                    FileEntry {
+                                                        filename: path.to_string(),
+                                                        filetype: FileType::Directory,
+                                                    }
+                                                );
+                                            } else {
+                                                path_strings.push(
+                                                    FileEntry {
+                                                        filename: path.to_string(),
+                                                        filetype: FileType::File,
+                                                    }
+                                                );
+                                            }
+                                        }
+                                        Err(error) => {
+                                            log::error!("Cannot get metadata: {:?}", error);
+                                            path_strings.push(
+                                                FileEntry {
+                                                    filename: path.to_string(),
+                                                    filetype: FileType::Unknown,
+                                                }
+                                            );
+                                        }
+                                    }
+                                },
+                                None => {
                                     update::show_error(
                                         s,
-                                        format!("Error converting path to string: {:?}", error),
+                                        format!("Error converting path to string: {:?}", entry),
                                     );
                                 }
                             }
@@ -130,11 +161,14 @@ pub mod run {
                     }
                 }
 
-                path_strings.sort();
+                //path_strings.sort();
                 match env::current_dir() {
                     Ok(current_dir) => {
                         if current_dir != Path::new("/").to_path_buf() {
-                            path_strings.insert(0, "..".to_string());
+                            path_strings.insert(0, FileEntry {
+                                filename: "..".to_string(),
+                                filetype: FileType::Directory,
+                            });
                         }
                     }
                     Err(error) => log::error!("Cannot get current directory: {:?}", error),
@@ -159,5 +193,17 @@ pub mod run {
                 error_output: String::from_utf8(output.stderr).unwrap(),
             }
         }
+    }
+
+    pub enum FileType {
+        Directory,
+        Executable,
+        File,
+        Unknown,
+    }
+
+    pub struct FileEntry {
+        pub filename: String,
+        pub filetype: FileType,
     }
 }
