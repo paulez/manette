@@ -1,6 +1,5 @@
 pub mod run {
-    use cursive::{Cursive, theme::{BaseColor, Color}};
-    use cursive::utils::markup::StyledString;
+    use cursive::Cursive;
 
     use crate::ui::update;
 
@@ -121,32 +120,26 @@ pub mod run {
                                     match metadata {
                                         Ok(metadata) => {
                                             if metadata.is_dir() {
-                                                path_strings.push(
-                                                    FileEntry {
-                                                        filename: path.to_string(),
-                                                        filetype: FileType::Directory,
-                                                    }
-                                                );
+                                                path_strings.push(FileEntry {
+                                                    filename: path.to_string(),
+                                                    filetype: FileType::Directory,
+                                                });
                                             } else {
-                                                path_strings.push(
-                                                    FileEntry {
-                                                        filename: path.to_string(),
-                                                        filetype: FileType::File,
-                                                    }
-                                                );
+                                                path_strings.push(FileEntry {
+                                                    filename: path.to_string(),
+                                                    filetype: FileType::File,
+                                                });
                                             }
                                         }
                                         Err(error) => {
                                             log::error!("Cannot get metadata: {:?}", error);
-                                            path_strings.push(
-                                                FileEntry {
-                                                    filename: path.to_string(),
-                                                    filetype: FileType::Unknown,
-                                                }
-                                            );
+                                            path_strings.push(FileEntry {
+                                                filename: path.to_string(),
+                                                filetype: FileType::Unknown,
+                                            });
                                         }
                                     }
-                                },
+                                }
                                 None => {
                                     update::show_error(
                                         s,
@@ -165,10 +158,13 @@ pub mod run {
                 match env::current_dir() {
                     Ok(current_dir) => {
                         if current_dir != Path::new("/").to_path_buf() {
-                            path_strings.insert(0, FileEntry {
-                                filename: "..".to_string(),
-                                filetype: FileType::Directory,
-                            });
+                            path_strings.insert(
+                                0,
+                                FileEntry {
+                                    filename: "..".to_string(),
+                                    filetype: FileType::Directory,
+                                },
+                            );
                         }
                     }
                     Err(error) => log::error!("Cannot get current directory: {:?}", error),
