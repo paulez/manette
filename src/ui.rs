@@ -1,6 +1,10 @@
 pub mod update {
 
-    use cursive::{theme::{BaseColor, Color}, utils::markup::StyledString, views::{EditView, LinearLayout, SelectView}};
+    use cursive::{
+        theme::{BaseColor, Color},
+        utils::markup::StyledString,
+        views::{EditView, LinearLayout, SelectView},
+    };
     use cursive::{
         traits::{Nameable, Scrollable},
         views::{ResizedView, ScrollView, TextView},
@@ -64,7 +68,6 @@ pub mod update {
             layout.add_child(TextView::new(result.error_output).with_name("command_error"));
         });
     }
-
 
     pub fn clear_command(s: &mut Cursive) {
         s.call_on_name("command_input", |view: &mut EditView| {

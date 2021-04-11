@@ -3,10 +3,10 @@ pub mod run {
 
     use crate::ui::update;
 
-    use std::{cmp::Ordering, env, os::unix::prelude::PermissionsExt};
     use std::fs;
     use std::path::Path;
     use std::process::{Command, Output};
+    use std::{cmp::Ordering, env, os::unix::prelude::PermissionsExt};
 
     pub fn run_command(command: &str, s: &mut Cursive) {
         let tokens: Vec<&str> = command.split_whitespace().collect();
@@ -42,7 +42,11 @@ pub mod run {
         s.run();
         match exit_status {
             Ok(exit_status) => {
-                log::debug!("Completed command {} with status {:?}", command, exit_status);
+                log::debug!(
+                    "Completed command {} with status {:?}",
+                    command,
+                    exit_status
+                );
             }
             Err(output) => {
                 log::error!("Error running {} with result {:?}", command, output);
