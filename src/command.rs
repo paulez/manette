@@ -1,5 +1,5 @@
 pub mod run {
-    use cursive::Cursive;
+    use cursive::{Cursive, CursiveExt};
 
     use crate::ui::update;
 
@@ -16,6 +16,8 @@ pub mod run {
             false => match tokens[0] {
                 "cd" => run_cd(tokens[1..].to_vec(), s),
                 "ls" => run_ls(tokens[1..].to_vec(), s),
+                "vim" => run_detached_command(tokens[0], tokens[1..].to_vec(), s),
+                "emacs" => run_detached_command(tokens[0], tokens[1..].to_vec(), s),
                 _ => {
                     let output = Command::new("/bin/sh").arg("-c").arg(command).output();
                     match output {
@@ -30,6 +32,21 @@ pub mod run {
                     }
                 }
             },
+        }
+    }
+
+    fn run_detached_command(command: &str, params: Vec<&str>, s: &mut Cursive) {
+        update::clear_command(s);
+        s.quit();
+        let exit_status = Command::new(command).args(params).status();
+        s.run();
+        match exit_status {
+            Ok(exit_status) => {
+                log::debug!("Completed command {} with status {:?}", command, exit_status);
+            }
+            Err(output) => {
+                log::error!("Error running {} with result {:?}", command, output);
+            }
         }
     }
 
