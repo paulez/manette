@@ -38,6 +38,7 @@ pub mod run {
     use cursive::{Cursive, CursiveExt};
 
     use crate::ui::update;
+    use crate::file::open;
 
     use std::fs;
     use std::path::Path;
@@ -101,6 +102,7 @@ pub mod run {
                     run_cd([filename].to_vec(), s);
                 } else if metadata.is_file() {
                     log::debug!("{} is a file", filename);
+                    open::open_file(s, filename);
                 } else {
                     log::debug!("{} is something else", filename);
                 }
