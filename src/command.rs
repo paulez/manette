@@ -281,4 +281,18 @@ pub mod run {
     }
 
     impl Eq for FileEntry {}
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use cursive;
+
+        #[test]
+        fn test_ls() {
+            let mut test_cursive = cursive::dummy();
+            let test_params = vec!["."];
+            run_ls(test_params, &mut test_cursive);
+        }
+    }
 }
+
