@@ -38,11 +38,13 @@ pub mod run {
     use cursive::{Cursive, CursiveExt};
 
     use crate::ui::update;
+    use crate::file::filetype;
+    use crate::file::filetype::FileType;
 
     use std::fs;
     use std::path::Path;
     use std::process::{Command, Output};
-    use std::{cmp::Ordering, env, os::unix::prelude::PermissionsExt};
+    use std::{cmp::Ordering, env};
 
     pub fn run_command(command: &str, s: &mut Cursive) {
         let tokens: Vec<&str> = command.split_whitespace().collect();
@@ -173,26 +175,7 @@ pub mod run {
                             let path = path.to_str();
                             match path {
                                 Some(path) => {
-                                    let metadata = entry.metadata();
-                                    let filetype: FileType = match metadata {
-                                        Ok(metadata) => {
-                                            if metadata.is_dir() {
-                                                FileType::Directory
-                                            } else if metadata.file_type().is_symlink() {
-                                                FileType::Symlink
-                                            } else if metadata.permissions().mode() & 0o111 != 0 {
-                                                FileType::Executable
-                                            } else if metadata.is_file() {
-                                                FileType::File
-                                            } else {
-                                                FileType::Unknown
-                                            }
-                                        }
-                                        Err(error) => {
-                                            log::error!("Cannot get metadata: {:?}", error);
-                                            FileType::Unknown
-                                        }
-                                    };
+                                    let filetype: FileType = filetype::get_type(entry);
                                     path_strings.push(FileEntry {
                                         filename: path.to_string(),
                                         filetype,
@@ -247,14 +230,6 @@ pub mod run {
                 error_output: String::from_utf8(output.stderr).unwrap(),
             }
         }
-    }
-
-    pub enum FileType {
-        Directory,
-        Executable,
-        File,
-        Symlink,
-        Unknown,
     }
 
     pub struct FileEntry {
