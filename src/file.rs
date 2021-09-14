@@ -36,24 +36,14 @@ knowledge of the CeCILL license and that you accept its terms.
 
 pub mod filetype {
 
-    use std::fs::DirEntry;
+    use std::fs::{DirEntry, Metadata};
     use std::os::unix::prelude::PermissionsExt;
-    
+
     pub fn get_type(dir_entry: DirEntry) -> FileType {
         let metadata = dir_entry.metadata();
         let filetype: FileType = match metadata {
             Ok(metadata) => {
-                if metadata.is_dir() {
-                    FileType::Directory
-                } else if metadata.file_type().is_symlink() {
-                    FileType::Symlink
-                } else if metadata.permissions().mode() & 0o111 != 0 {
-                    FileType::Executable
-                } else if metadata.is_file() {
-                    FileType::File
-                } else {
-                    FileType::Unknown
-                }
+                get_type_from_metadata(metadata)
             }
             Err(error) => {
                 log::error!("Cannot get metadata: {:?}", error);
@@ -62,7 +52,21 @@ pub mod filetype {
         };
         filetype
     }
-    
+
+    pub fn get_type_from_metadata(metadata: Metadata) -> FileType {
+        if metadata.is_dir() {
+            FileType::Directory
+        } else if metadata.file_type().is_symlink() {
+            FileType::Symlink
+        } else if metadata.permissions().mode() & 0o111 != 0 {
+            FileType::Executable
+        } else if metadata.is_file() {
+            FileType::File
+        } else {
+            FileType::Unknown
+        }
+    }
+
     pub enum FileType {
         Directory,
         Executable,
