@@ -33,6 +33,15 @@ impl CliView {
         Callback::dummy()
     }
 
+    fn backspace(&mut self) -> EventResult {
+        let len = self.content[..self.cursor]
+            .graphemes(true)
+            .last()
+            .unwrap()
+            .len();
+        self.cursor -= len;
+        EventResult::Consumed(Some(self.remove(len)))
+    }
 }
 
 impl View for CliView {
@@ -51,15 +60,15 @@ impl View for CliView {
                 return EventResult::Consumed(Some(self.insert(ch)));
             }
             Event::Key(Key::Backspace) if self.cursor > 0 => {
-                let len = self.content[..self.cursor]
-                    .graphemes(true)
-                    .last()
-                    .unwrap()
-                    .len();
-                self.cursor -= len;
-                return EventResult::Consumed(Some(self.remove(len)));
+                return self.backspace();
             }
-            _ => return EventResult::Ignored,
+            Event::CtrlChar('h') if self.cursor > 0 => {
+                return self.backspace();
+            }
+            _ => {
+                log::debug!("Got unknown event {:?}", event);
+                return EventResult::Ignored;
+            }
         }
     }
 
