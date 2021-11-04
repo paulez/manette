@@ -80,7 +80,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
                 .on_submit(user_input)
                 .with_name("command_input"),
         )
-        .child(CliView::new())
+        .child(CliView::new()
+               .on_submit(user_input)
+               .with_name("cli_input")
+        )
         .child(DummyView)
         .child(LinearLayout::vertical().with_name("command_layout"));
     if config.debug {

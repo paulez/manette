@@ -1,14 +1,18 @@
-use cursive::{Printer, View};
+use cursive::{Cursive, Printer, View, With};
 use cursive::direction::Direction;
 use cursive::event::{Callback, Event, EventResult, Key};
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
+
+pub type OnSubmit = dyn Fn(&mut Cursive, &str);
 
 pub struct CliView {
     // Current content
     content: Rc<String>,
     // Cursor position in the content, in bytes.
     cursor: usize,
+    // Callback when <Enter> is pressed
+    on_submit: Option<Rc<OnSubmit>>,
 }
 
 impl CliView {
@@ -16,6 +20,7 @@ impl CliView {
         CliView {
             content: Rc::new(String::new()),
             cursor: 0,
+            on_submit: None,
         }
     }
 
@@ -41,6 +46,20 @@ impl CliView {
             .len();
         self.cursor -= len;
         EventResult::Consumed(Some(self.remove(len)))
+    }
+
+    pub fn set_on_submit<F>(&mut self, callback: F)
+    where
+        F: Fn(&mut Cursive, &str) + 'static,
+    {
+        self.on_submit = Some(Rc::new(callback));
+    }
+
+    pub fn on_submit<F>(self, callback: F) -> Self
+    where
+        F: Fn(&mut Cursive, &str) + 'static,
+    {
+        self.with(|v| v.set_on_submit(callback))
     }
 }
 
