@@ -91,6 +91,26 @@ impl View for CliView {
                 printer.print_hline((width, 0), filler_len, self.filler.as_str());
             });
         });
+        // Now print cursor
+        printer.with_color(ColorStyle::highlight(), |printer| {
+            if printer.focused {
+                let c: &str = if self.cursor == self.content.len() {
+                    &self.filler
+                } else {
+                    self.content[self.cursor..]
+                        .graphemes(true)
+                        .next()
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "Found no char at cursor {} in {}",
+                                self.cursor, &self.content
+                            )
+                        })
+                };
+                let offset = self.content[0..self.cursor].width();
+                printer.print((offset, 0), c);
+            }
+        });
     }
 
     fn take_focus(&mut self, _source: Direction) -> bool {
