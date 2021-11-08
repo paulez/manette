@@ -36,7 +36,7 @@ knowledge of the CeCILL license and that you accept its terms.
 
 use clap::ArgMatches;
 use cursive::theme::{Color, PaletteColor, Theme};
-use cursive::views::{DummyView, EditView, LinearLayout, Panel};
+use cursive::views::{DummyView, LinearLayout, Panel};
 use cursive::{Cursive, CursiveExt};
 use cursive_core::view::Nameable;
 use cursive_flexi_logger_view::FlexiLoggerView;
@@ -54,9 +54,6 @@ use crate::view::CliView;
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let user_input = move |s: &mut Cursive, command: &str| {
         run::run_command(command, s);
-        s.call_on_name("command_input", |view: &mut EditView| {
-            view.set_content("");
-        });
         s.call_on_name("cli_input", |view: &mut CliView| {
             view.set_content("");
         });
@@ -78,11 +75,6 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     siv.set_theme(theme);
     siv.add_global_callback('q', |s| s.quit());
     let mut layout = LinearLayout::vertical()
-        .child(
-            EditView::new()
-                .on_submit(user_input)
-                .with_name("command_input"),
-        )
         .child(CliView::new().on_submit(user_input).with_name("cli_input"))
         .child(DummyView)
         .child(LinearLayout::vertical().with_name("command_layout"));

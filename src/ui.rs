@@ -39,7 +39,7 @@ pub mod update {
     use cursive::{
         theme::{BaseColor, Color},
         utils::markup::StyledString,
-        views::{EditView, LinearLayout, SelectView},
+        views::{LinearLayout, SelectView},
     };
     use cursive::{
         traits::{Nameable, Scrollable},
@@ -47,9 +47,9 @@ pub mod update {
         Cursive,
     };
 
-    use crate::command::run::CommandResult;
-    use crate::command::run::{self, FileEntry};
+    use crate::command::run::{self, CommandResult, FileEntry};
     use crate::file::filetype::FileType;
+    use crate::view::CliView;
 
     pub fn file_list_view(s: &mut Cursive, file_list: Vec<FileEntry>) {
         s.call_on_name("command_layout", |layout: &mut LinearLayout| {
@@ -107,7 +107,7 @@ pub mod update {
     }
 
     pub fn clear_command(s: &mut Cursive) {
-        s.call_on_name("command_input", |view: &mut EditView| {
+        s.call_on_name("cli_input", |view: &mut CliView| {
             view.set_content("");
         });
     }

@@ -100,15 +100,9 @@ impl View for CliView {
 
     fn on_event(&mut self, event: Event) -> EventResult {
         match event {
-            Event::Char(ch) => {
-                EventResult::Consumed(Some(self.insert(ch)))
-            }
-            Event::Key(Key::Backspace) if self.cursor > 0 => {
-                self.backspace()
-            }
-            Event::CtrlChar('h') if self.cursor > 0 => {
-                self.backspace()
-            }
+            Event::Char(ch) => EventResult::Consumed(Some(self.insert(ch))),
+            Event::Key(Key::Backspace) if self.cursor > 0 => self.backspace(),
+            Event::CtrlChar('h') if self.cursor > 0 => self.backspace(),
             Event::Key(Key::Enter) => {
                 let cb = self.on_submit.clone().unwrap();
                 let content = Rc::clone(&self.content);
