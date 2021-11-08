@@ -1,6 +1,6 @@
-use cursive::{Cursive, Printer, View, With};
 use cursive::direction::Direction;
 use cursive::event::{Callback, Event, EventResult, Key};
+use cursive::{Cursive, Printer, View, With};
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -16,7 +16,7 @@ pub struct CliView {
 }
 
 impl CliView {
-    pub fn new()-> Self {
+    pub fn new() -> Self {
         CliView {
             content: Rc::new(String::new()),
             cursor: 0,
@@ -24,7 +24,7 @@ impl CliView {
         }
     }
 
-    fn insert(&mut self,ch: char) -> Callback {
+    fn insert(&mut self, ch: char) -> Callback {
         Rc::make_mut(&mut self.content).insert(self.cursor, ch);
         self.cursor += ch.len_utf8();
         Callback::dummy()
@@ -34,7 +34,7 @@ impl CliView {
         let start = self.cursor;
         let end = self.cursor + len;
         log::debug!("Removing from {} to {}", start, end);
-        for _ in Rc::make_mut(&mut self.content).drain(start..end){}
+        for _ in Rc::make_mut(&mut self.content).drain(start..end) {}
         Callback::dummy()
     }
 
@@ -65,7 +65,7 @@ impl CliView {
 
 impl View for CliView {
     fn draw(&self, printer: &Printer) {
-        printer.print((0,0), &self.content);
+        printer.print((0, 0), &self.content);
     }
 
     fn take_focus(&mut self, source: Direction) -> bool {
@@ -90,5 +90,4 @@ impl View for CliView {
             }
         }
     }
-
 }
