@@ -61,6 +61,19 @@ impl CliView {
     {
         self.with(|v| v.set_on_submit(callback))
     }
+
+    pub fn set_content<S: Into<String>>(&mut self, content: S) {
+        let content = content.into();
+        let len = content.len();
+
+        self.content = Rc::new(content);
+        self.set_cursor(len);
+    }
+
+    /// Sets the cursor position.
+    pub fn set_cursor(&mut self, cursor: usize) {
+        self.cursor = cursor;
+    }
 }
 
 impl View for CliView {
@@ -68,7 +81,7 @@ impl View for CliView {
         printer.print((0, 0), &self.content);
     }
 
-    fn take_focus(&mut self, source: Direction) -> bool {
+    fn take_focus(&mut self, _source: Direction) -> bool {
         log::debug!("Should focus?");
         true
     }
@@ -76,17 +89,24 @@ impl View for CliView {
     fn on_event(&mut self, event: Event) -> EventResult {
         match event {
             Event::Char(ch) => {
-                return EventResult::Consumed(Some(self.insert(ch)));
+                EventResult::Consumed(Some(self.insert(ch)))
             }
             Event::Key(Key::Backspace) if self.cursor > 0 => {
-                return self.backspace();
+                self.backspace()
             }
             Event::CtrlChar('h') if self.cursor > 0 => {
-                return self.backspace();
+                self.backspace()
+            }
+            Event::Key(Key::Enter) => {
+                let cb = self.on_submit.clone().unwrap();
+                let content = Rc::clone(&self.content);
+                EventResult::with_cb(move |s| {
+                    cb(s, &content);
+                })
             }
             _ => {
                 log::debug!("Got unknown event {:?}", event);
-                return EventResult::Ignored;
+                EventResult::Ignored
             }
         }
     }

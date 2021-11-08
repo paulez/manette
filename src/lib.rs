@@ -57,6 +57,9 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
         s.call_on_name("command_input", |view: &mut EditView| {
             view.set_content("");
         });
+        s.call_on_name("cli_input", |view: &mut CliView| {
+            view.set_content("");
+        });
     };
 
     let mut siv = Cursive::new();
