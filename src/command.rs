@@ -39,11 +39,13 @@ pub mod run {
 
     use crate::ui::update;
     use crate::file::open;
+    use crate::file::filetype;
+    use crate::file::filetype::FileType;
 
     use std::fs;
     use std::path::Path;
     use std::process::{Command, Output};
-    use std::{cmp::Ordering, env, os::unix::prelude::PermissionsExt};
+    use std::{cmp::Ordering, env};
 
     pub fn run_command(command: &str, s: &mut Cursive) {
         let tokens: Vec<&str> = command.split_whitespace().collect();
@@ -175,26 +177,7 @@ pub mod run {
                             let path = path.to_str();
                             match path {
                                 Some(path) => {
-                                    let metadata = entry.metadata();
-                                    let filetype: FileType = match metadata {
-                                        Ok(metadata) => {
-                                            if metadata.is_dir() {
-                                                FileType::Directory
-                                            } else if metadata.file_type().is_symlink() {
-                                                FileType::Symlink
-                                            } else if metadata.permissions().mode() & 0o111 != 0 {
-                                                FileType::Executable
-                                            } else if metadata.is_file() {
-                                                FileType::File
-                                            } else {
-                                                FileType::Unknown
-                                            }
-                                        }
-                                        Err(error) => {
-                                            log::error!("Cannot get metadata: {:?}", error);
-                                            FileType::Unknown
-                                        }
-                                    };
+                                    let filetype: FileType = filetype::get_type(entry);
                                     path_strings.push(FileEntry {
                                         filename: path.to_string(),
                                         filetype,
@@ -251,14 +234,6 @@ pub mod run {
         }
     }
 
-    pub enum FileType {
-        Directory,
-        Executable,
-        File,
-        Symlink,
-        Unknown,
-    }
-
     pub struct FileEntry {
         pub filename: String,
         pub filetype: FileType,
@@ -283,4 +258,18 @@ pub mod run {
     }
 
     impl Eq for FileEntry {}
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use cursive;
+
+        #[test]
+        fn test_ls() {
+            let mut test_cursive = cursive::dummy();
+            let test_params = vec!["."];
+            run_ls(test_params, &mut test_cursive);
+        }
+    }
 }
+

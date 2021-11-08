@@ -46,8 +46,10 @@ use std::{env, error::Error, path::PathBuf};
 mod command;
 mod file;
 mod ui;
+mod view;
 
 use crate::command::run;
+use crate::view::CliView;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let user_input = move |s: &mut Cursive, command: &str| {
@@ -77,6 +79,10 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
             EditView::new()
                 .on_submit(user_input)
                 .with_name("command_input"),
+        )
+        .child(CliView::new()
+               .on_submit(user_input)
+               .with_name("cli_input")
         )
         .child(DummyView)
         .child(LinearLayout::vertical().with_name("command_layout"));

@@ -48,7 +48,8 @@ pub mod update {
     };
 
     use crate::command::run::CommandResult;
-    use crate::command::run::{self, FileEntry, FileType};
+    use crate::command::run::{self, FileEntry};
+    use crate::file::filetype::FileType;
 
     pub fn file_list_view(s: &mut Cursive, file_list: Vec<FileEntry>) {
         s.call_on_name("command_layout", |layout: &mut LinearLayout| {
