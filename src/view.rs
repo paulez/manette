@@ -1,8 +1,10 @@
 use cursive::direction::Direction;
 use cursive::event::{Callback, Event, EventResult, Key};
+use cursive::theme::{ColorStyle, Effect};
 use cursive::{Cursive, Printer, View, With};
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 pub type OnSubmit = dyn Fn(&mut Cursive, &str);
 
@@ -13,6 +15,8 @@ pub struct CliView {
     cursor: usize,
     // Callback when <Enter> is pressed
     on_submit: Option<Rc<OnSubmit>>,
+    // Character to fill empty space.
+    filler: String,
 }
 
 impl CliView {
@@ -21,6 +25,7 @@ impl CliView {
             content: Rc::new(String::new()),
             cursor: 0,
             on_submit: None,
+            filler: " ".to_string(),
         }
     }
 
@@ -78,7 +83,14 @@ impl CliView {
 
 impl View for CliView {
     fn draw(&self, printer: &Printer) {
-        printer.print((0, 0), &self.content);
+        let width = self.content.width();
+        printer.with_color(ColorStyle::primary(), |printer| {
+            printer.with_effect(Effect::Reverse, |printer| {
+                printer.print((0, 0), &self.content);
+                let filler_len = (printer.size.x - width) / self.filler.width();
+                printer.print_hline((width, 0), filler_len, self.filler.as_str());
+            });
+        });
     }
 
     fn take_focus(&mut self, _source: Direction) -> bool {
