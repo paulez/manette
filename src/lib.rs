@@ -46,6 +46,7 @@ use std::{env, error::Error, path::PathBuf};
 mod command;
 mod file;
 mod ui;
+mod userenv;
 
 use crate::command::run;
 

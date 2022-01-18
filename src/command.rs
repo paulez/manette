@@ -40,6 +40,7 @@ pub mod run {
     use crate::ui::update;
     use crate::file::filetype;
     use crate::file::filetype::FileType;
+    use crate::userenv::userenv;
 
     use std::fs;
     use std::path::Path;
@@ -120,7 +121,7 @@ pub mod run {
         match metadata {
             Ok(metadata) => {
                 if metadata.is_file() {
-                    run_detached_command("vim", vec!(filename), s);
+                    run_detached_command(userenv::editor().as_str(), vec!(filename), s);
                 }
             }
             Err(error) => {

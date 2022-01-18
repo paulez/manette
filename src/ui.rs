@@ -94,7 +94,7 @@ pub mod update {
             });
 
             let on_event = OnEventView::new(select)
-                .on_event_inner('e', |sel: &mut SelectView, e: &Event| {
+                .on_event_inner('e', |sel: &mut SelectView, _e: &Event| {
                     log::debug!("Pressed e");
                     let selection = sel.selection();
                     match selection {
