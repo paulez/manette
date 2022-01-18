@@ -114,6 +114,22 @@ pub mod run {
         }
     }
 
+    pub fn edit_file(s: &mut Cursive, filename: &str) {
+        let metadata = fs::metadata(filename);
+
+        match metadata {
+            Ok(metadata) => {
+                if metadata.is_file() {
+                    run_detached_command("vim", vec!(filename), s);
+                }
+            }
+            Err(error) => {
+                log::error!("Failed to read metadata {:?}", error);
+                update::show_error(s, format!("Failed to read metadata {:?}", error))
+            }
+        }
+    }
+
     fn run_cd(params: Vec<&str>, s: &mut Cursive) {
         log::debug!("Running cd to {:?}", &params);
         match params.first() {

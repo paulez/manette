@@ -36,10 +36,12 @@ knowledge of the CeCILL license and that you accept its terms.
 
 pub mod update {
 
+    use cursive::event::EventResult;
+    use cursive::event::Event;
     use cursive::{
         theme::{BaseColor, Color},
         utils::markup::StyledString,
-        views::{EditView, LinearLayout, SelectView},
+        views::{EditView, LinearLayout, OnEventView, SelectView},
     };
     use cursive::{
         traits::{Nameable, Scrollable},
@@ -90,8 +92,23 @@ pub mod update {
                 log::debug!("File list: {:?} selected", selection);
                 run::submit_file(s, selection);
             });
+
+            let on_event = OnEventView::new(select)
+                .on_event_inner('e', |sel: &mut SelectView, e: &Event| {
+                    log::debug!("Pressed e");
+                    let selection = sel.selection();
+                    match selection {
+                        Some(selection) => {
+                            Some(EventResult::with_cb(move |s| {
+                                run::edit_file(s, &selection);
+                            }))
+                        }
+                        None => None,
+                    }
+                });
+
             layout.add_child(ResizedView::with_full_screen(
-                select.scrollable().with_name("filelist_view"),
+                on_event.scrollable().with_name("filelist_view"),
             ));
         });
     }
