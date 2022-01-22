@@ -32,5 +32,5 @@ cargo run
 We build a release inside a container for maximum compatibility.
 
 ```
-podman run --rm -v "$PWD":/usr/src/manette:Z -w /usr/src/manette rust cargo build --release
+docker run --rm -v "$PWD":/usr/src/manette:Z -w /usr/src/manette rust cargo build --release
 ```
