@@ -121,7 +121,21 @@ pub mod run {
         match metadata {
             Ok(metadata) => {
                 if metadata.is_file() {
-                    run_detached_command(userenv::editor().as_str(), vec!(filename), s);
+                    let editor = userenv::editor();
+                    let tokens: Vec<&str> = editor.split_whitespace().collect();
+                    let command = match tokens.is_empty() {
+                        true => "vim",
+                        false => tokens[0],
+                    };
+                    let args = match tokens.is_empty() {
+                        true => vec![filename],
+                        false => {
+                            let mut all_args = tokens[1..].to_vec();
+                            all_args.push(filename);
+                            all_args
+                        }
+                    };
+                    run_detached_command(command, args, s);
                 }
             }
             Err(error) => {
