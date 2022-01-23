@@ -39,9 +39,9 @@ pub mod run {
 
     use crate::file::filetype;
     use crate::file::filetype::FileType;
-    use crate::userenv::userenv;
     use crate::file::open;
     use crate::ui::update;
+    use crate::userenv::userenv;
 
     use std::fs;
     use std::path::Path;
