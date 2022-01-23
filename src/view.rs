@@ -5,6 +5,7 @@ use cursive::{Cursive, Printer, View, With};
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
+use crate::autocomplete::autocomplete;
 
 pub type OnSubmit = dyn Fn(&mut Cursive, &str);
 
@@ -51,6 +52,11 @@ impl CliView {
             .len();
         self.cursor -= len;
         EventResult::Consumed(Some(self.remove(len)))
+    }
+
+    fn autocomplete(&mut self) -> EventResult {
+        let _completion = autocomplete::autocomplete(&self.content);
+        EventResult::Consumed(None)
     }
 
     pub fn set_on_submit<F>(&mut self, callback: F)
@@ -129,6 +135,10 @@ impl View for CliView {
                 EventResult::with_cb(move |s| {
                     cb(s, &content);
                 })
+            }
+            Event::Key(Key::Tab) => {
+                log::debug!("Trigger autocompletion");
+                self.autocomplete()
             }
             _ => {
                 log::debug!("Got unknown event {:?}", event);

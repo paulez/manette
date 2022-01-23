@@ -43,6 +43,7 @@ use cursive_flexi_logger_view::FlexiLoggerView;
 use flexi_logger::{LogTarget, Logger};
 use std::{env, error::Error, path::PathBuf};
 
+mod autocomplete;
 mod command;
 mod file;
 mod ui;
