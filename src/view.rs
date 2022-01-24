@@ -55,7 +55,8 @@ impl CliView {
     }
 
     fn autocomplete(&mut self) -> EventResult {
-        let _completion = autocomplete::autocomplete(&self.content);
+        let completion = autocomplete::autocomplete(&self.content);
+        log::debug!("Completion results: {:?}", completion);
         EventResult::Consumed(None)
     }
 

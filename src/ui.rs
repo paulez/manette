@@ -41,7 +41,7 @@ pub mod update {
     use cursive::{
         theme::{BaseColor, Color},
         utils::markup::StyledString,
-        views::{EditView, LinearLayout, OnEventView, SelectView},
+        views::{LinearLayout, OnEventView, SelectView},
     };
     use cursive::{
         traits::{Nameable, Scrollable},

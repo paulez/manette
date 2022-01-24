@@ -46,4 +46,14 @@ pub mod userenv {
             }
         }
     }
+
+    pub fn path() -> String {
+        match env::var("PATH") {
+            Ok(path) => path,
+            Err(_err) => {
+                log::warn!("Cannot get PATH from environment");
+                String::from("/bin:/usr/bin")
+            }
+        }
+    }
 }
