@@ -55,27 +55,29 @@ use crate::userenv::userenv;
                 for entry in paths {
                     match entry {
                         Ok(entry) => {
-                            let metadata = entry.metadata();
-                            match metadata {
-                                Ok(metadata) => {
-                                    let path = entry.path();
-                                    let pathstr = path.to_str();
-                                    match pathstr {
-                                        Some(pathstr) => {
-                                            if pathstr.to_string().starts_with(prefix) {
+                            let filename = entry.file_name();
+                            let filenamestr = filename.to_str();
+                            match filenamestr {
+                                Some(filenamestr) => {
+                                    let filenamestring = filenamestr.to_string();
+                                    if filenamestring.starts_with(prefix) {
+                                        log::debug!("Testing entry metadata: {:?}", entry);
+                                        let metadata = entry.metadata();
+                                        match metadata {
+                                            Ok(metadata) => {
                                                 let permissions = metadata.permissions();
                                                 if permissions.mode() & 0o111 != 0 {
-                                                    path_strings.push(entry.path().to_str().unwrap().to_string())
+                                                    path_strings.push(filenamestring);
                                                 }
                                             }
-                                        }
-                                        None => {
-                                            log::warn!("Cannot convert into str: {:?}", entry);
+                                            Err(_err) => {
+                                                log::warn!("Cannot read metadata for {:?}", entry);
+                                            }
                                         }
                                     }
                                 }
-                                Err(_err) => {
-                                    log::warn!("Cannot read metadata for {:?}", entry);
+                                None => {
+                                    log::warn!("Cannot convert into str: {:?}", entry);
                                 }
                             }
                         }
