@@ -10,15 +10,13 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 use crate::autocomplete::autocomplete;
 
-pub type OnSubmit = dyn Fn(&mut Cursive, &str);
-
 pub struct CliView {
     // Current content
     content: Rc<String>,
     // Cursor position in the content, in bytes.
     cursor: usize,
     // Callback when <Enter> is pressed
-    on_submit: Option<Rc<OnSubmit>>,
+    on_submit: Option<Rc<dyn Fn(&mut Cursive, &str)>>,
     // Character to fill empty space.
     filler: String,
 }
@@ -57,12 +55,6 @@ impl CliView {
         EventResult::Consumed(Some(self.remove(len)))
     }
 
-    fn autocomplete(&mut self) -> EventResult {
-        let completion = autocomplete::autocomplete(&self.content);
-        log::debug!("Completion results: {:?}", completion);
-        EventResult::Consumed(None)
-    }
-
     pub fn set_on_submit<F>(&mut self, callback: F)
     where
         F: Fn(&mut Cursive, &str) + 'static,
@@ -94,12 +86,12 @@ impl CliView {
         let offset = XY::new(3, 4);
         let mut tree = MenuTree::new();
         for item in choices.iter() {
-            let on_submit = self.on_submit.as_ref().cloned();
             let to_add = item.clone();
-            tree.add_leaf(to_add.clone(), move |s| {
-                if let Some(ref on_submit) = on_submit {
-                    on_submit(s, to_add.as_str());
-                }
+            tree.add_leaf(item.clone(), move |s| {
+                let content = to_add.clone();
+                s.call_on_name("cli_input", |view: &mut CliView| {
+                    view.set_content(content);
+                });
             });
         }
 
