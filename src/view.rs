@@ -163,7 +163,11 @@ impl View for CliView {
             Event::Key(Key::Tab) => {
                 log::debug!("Trigger autocompletion");
                 let completion = autocomplete::autocomplete(&self.content);
-                self.autocomplete_popup(completion)
+                if completion.len() > 0 {
+                    self.autocomplete_popup(completion)
+                } else {
+                    EventResult::Consumed(None)
+                }
             }
             _ => {
                 log::debug!("Got unknown event {:?}", event);
