@@ -40,7 +40,6 @@ impl CliView {
     fn remove(&mut self, len: usize) -> Callback {
         let start = self.cursor;
         let end = self.cursor + len;
-        log::debug!("Removing from {} to {}", start, end);
         for _ in Rc::make_mut(&mut self.content).drain(start..end) {}
         Callback::dummy()
     }
@@ -55,6 +54,8 @@ impl CliView {
         EventResult::Consumed(Some(self.remove(len)))
     }
 
+    // Allows setting the on_submit callback on an existing
+    // view
     pub fn set_on_submit<F>(&mut self, callback: F)
     where
         F: Fn(&mut Cursive, &str) + 'static,
@@ -62,6 +63,9 @@ impl CliView {
         self.on_submit = Some(Rc::new(callback));
     }
 
+
+    // Allows setting the on_submit callback when creating
+    // the view
     pub fn on_submit<F>(self, callback: F) -> Self
     where
         F: Fn(&mut Cursive, &str) + 'static,
@@ -88,7 +92,8 @@ impl CliView {
         for item in choices.iter() {
             let to_add = item.clone();
             tree.add_leaf(item.clone(), move |s| {
-                let content = to_add.clone();
+                let mut content = to_add.clone();
+                content.push(' ');
                 s.call_on_name("cli_input", |view: &mut CliView| {
                     view.set_content(content);
                 });
