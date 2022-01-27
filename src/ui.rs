@@ -138,6 +138,9 @@ pub mod update {
         });
     }
 
+
+
+
     fn clear_output_layers(layout: &mut LinearLayout) {
         let children_names = ["command_output", "command_error", "filelist_view"];
         for child_name in &children_names {

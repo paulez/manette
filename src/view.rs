@@ -1,7 +1,10 @@
 use cursive::direction::Direction;
 use cursive::event::{Callback, Event, EventResult, Key};
 use cursive::theme::{ColorStyle, Effect};
-use cursive::{Cursive, Printer, View, With};
+use cursive::{Cursive, Printer, View, With, XY};
+use cursive::menu::MenuTree;
+use cursive::view::Position;
+use cursive::views::{MenuPopup, OnEventView};
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -86,9 +89,37 @@ impl CliView {
     pub fn set_cursor(&mut self, cursor: usize) {
         self.cursor = cursor;
     }
+
+    fn autocomplete_popup(&mut self, choices: Vec<String>) -> EventResult {
+        let offset = XY::new(3, 4);
+        let mut tree = MenuTree::new();
+        for item in choices.iter() {
+            let on_submit = self.on_submit.as_ref().cloned();
+            let to_add = item.clone();
+            tree.add_leaf(to_add.clone(), move |s| {
+                if let Some(ref on_submit) = on_submit {
+                    on_submit(s, to_add.as_str());
+                }
+            });
+        }
+
+        let tree = Rc::new(tree);
+
+        EventResult::with_cb(move |s| {
+            let tree = Rc::clone(&tree);
+            s.screen_mut().add_layer_at(
+                Position::absolute(offset),
+                OnEventView::new(
+                    MenuPopup::new(tree)
+                )
+            );
+        })
+    }
 }
 
+
 impl View for CliView {
+
     fn draw(&self, printer: &Printer) {
         let width = self.content.width();
         printer.with_color(ColorStyle::primary(), |printer| {
@@ -139,7 +170,8 @@ impl View for CliView {
             }
             Event::Key(Key::Tab) => {
                 log::debug!("Trigger autocompletion");
-                self.autocomplete()
+                let completion = autocomplete::autocomplete(&self.content);
+                self.autocomplete_popup(completion)
             }
             _ => {
                 log::debug!("Got unknown event {:?}", event);
