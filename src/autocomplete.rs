@@ -44,6 +44,7 @@ use crate::userenv::userenv;
         for path in userenv::path().split(":") {
             choices.append(&mut executables_in_path_with_prefix(path, command));
         }
+        choices.sort();
         choices
     }
 
