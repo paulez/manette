@@ -1,5 +1,5 @@
 use cursive::direction::Direction;
-use cursive::event::{Callback, Event, EventResult, Key};
+use cursive::event::{Callback, Event, EventResult, EventTrigger, Key};
 use cursive::theme::{ColorStyle, Effect};
 use cursive::{Cursive, Printer, View, With, XY};
 use cursive::menu::MenuTree;
@@ -109,6 +109,20 @@ impl CliView {
                 OnEventView::new(
                     MenuPopup::new(tree)
                 )
+                    .on_event_inner(EventTrigger::any(), |s, event| {
+                        log::debug!("Event: {:?}", event);
+                        match event {
+                            Event::Char(ch) => {
+                                let ch_toadd = ch.clone();
+                                Some(EventResult::with_cb(move |s| {
+                                    s.call_on_name("cli_input", |view: &mut CliView| {
+                                        view.insert(ch_toadd);
+                                    });
+                                }))
+                            },
+                            _ => None
+                        }
+                    })
             );
         })
     }
