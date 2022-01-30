@@ -38,7 +38,6 @@ use cursive::direction::Direction;
 use cursive::event::{Callback, Event, EventResult, EventTrigger, Key};
 use cursive::theme::{ColorStyle, Effect};
 use cursive::{Cursive, Printer, View, With, XY};
-use cursive::menu::MenuTree;
 use cursive::view::Position;
 use cursive::views::OnEventView;
 use std::rc::Rc;
@@ -68,7 +67,7 @@ impl CliView {
         }
     }
 
-    fn insert(&mut self, ch: char) -> Callback {
+    pub fn insert(&mut self, ch: char) -> Callback {
         Rc::make_mut(&mut self.content).insert(self.cursor, ch);
         self.cursor += ch.len_utf8();
         Callback::dummy()
@@ -123,52 +122,16 @@ impl CliView {
         self.cursor = cursor;
     }
 
-    fn autocomplete_tree(choices: Vec<String>) -> Rc<MenuTree> {
-        let mut tree = MenuTree::new();
-        for item in choices.iter() {
-            let to_add = item.clone();
-            tree.add_leaf(item.clone(), move |s| {
-                let mut content = to_add.clone();
-                content.push(' ');
-                s.call_on_name("cli_input", |view: &mut CliView| {
-                    view.set_content(content);
-                });
-            });
-        }
-
-        Rc::new(tree)
-    }
 
     fn autocomplete_popup(&mut self, choices: Vec<String>) -> EventResult {
         log::debug!("Creating autocomplete popup");
         let offset = XY::new(3, 4);
 
-        let tree = CliView::autocomplete_tree(choices);
-
+        let content = self.content.clone();
         EventResult::with_cb(move |s| {
-            let tree = Rc::clone(&tree);
             s.screen_mut().add_layer_at(
                 Position::absolute(offset),
-                OnEventView::new(
-                    AutocompletePopup::new(tree)
-                )
-                    .on_event_inner(EventTrigger::any(), |v, event| {
-                        log::debug!("Event: {:?}", event);
-                        let result = match event {
-                            Event::Char(ch) => {
-                                let ch_toadd = ch.clone();
-                                Some(EventResult::with_cb(move |s| {
-                                    log::debug!("Pop layer");
-                                    s.call_on_name("cli_input", |view: &mut CliView| {
-                                        log::debug!("Popup callback");
-                                        view.insert(ch_toadd);
-                                    });
-                                }))
-                            },
-                            _ => None
-                        };
-                        result
-                    })
+                AutocompletePopup::new(content.clone(), &choices)
             );
         })
     }

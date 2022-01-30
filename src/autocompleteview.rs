@@ -43,15 +43,16 @@ use cursive::view::scroll;
 use cursive::impl_scroller;
 use cursive::menu::{MenuItem, MenuTree};
 use cursive::Printer;
-use cursive::view::{Position, View};
-use cursive::views::OnEventView;
+use cursive::view::View;
 use cursive::Rect;
 use cursive::Vec2;
 use cursive::With;
 use std::rc::Rc;
 use unicode_width::UnicodeWidthStr;
+use crate::view::CliView;
 
 pub struct AutocompletePopup {
+    input: Rc<String>,
     menu: Rc<MenuTree>,
     focus: usize,
     scroll_core: scroll::Core,
@@ -63,8 +64,10 @@ pub struct AutocompletePopup {
 impl_scroller!(AutocompletePopup::scroll_core);
 
 impl AutocompletePopup {
-    pub fn new(menu: Rc<MenuTree>) -> Self {
+    pub fn new(input: Rc<String>, choices: &Vec<String>) -> Self {
+        let menu = AutocompletePopup::autocomplete_tree(choices);
         AutocompletePopup {
+            input,
             menu,
             focus: 0,
             scroll_core: scroll::Core::new(),
@@ -72,6 +75,22 @@ impl AutocompletePopup {
             on_dismiss: None,
             on_action: None,
         }
+    }
+
+    fn autocomplete_tree(choices: &Vec<String>) -> Rc<MenuTree> {
+        let mut tree = MenuTree::new();
+        for item in choices.iter() {
+            let to_add = item.clone();
+            tree.add_leaf(item.clone(), move |s| {
+                let mut content = to_add.clone();
+                content.push(' ');
+                s.call_on_name("cli_input", |view: &mut CliView| {
+                    view.set_content(content);
+                });
+            });
+        }
+
+        Rc::new(tree)
     }
 
     fn item_width(item: &MenuItem) -> usize {
@@ -144,7 +163,6 @@ impl AutocompletePopup {
                     cb.clone()(s);
                 })
             }
-            MenuItem::Subtree(_, ref tree) => self.make_subtree_cb(tree),
             _ => unreachable!("Delimiters cannot be submitted."),
         }
     }
@@ -156,40 +174,6 @@ impl AutocompletePopup {
                 cb.clone()(s);
             }
             s.pop_layer();
-        })
-    }
-
-    fn make_subtree_cb(&self, tree: &Rc<MenuTree>) -> EventResult {
-        let tree = Rc::clone(tree);
-        let max_width = 4 + self
-            .menu
-            .children
-            .iter()
-            .map(AutocompletePopup::item_width)
-            .max()
-            .unwrap_or(1);
-        let offset = Vec2::new(max_width, self.focus);
-        let action_cb = self.on_action.clone();
-
-        EventResult::with_cb(move |s| {
-            let action_cb = action_cb.clone();
-            s.screen_mut().add_layer_at(
-                Position::parent(offset),
-                OnEventView::new(AutocompletePopup::new(Rc::clone(&tree)).on_action(
-                    move |s| {
-                        // This will happen when the subtree popup
-                        // activates something;
-                        // First, remove ourselve.
-                        s.pop_layer();
-                        if let Some(ref action_cb) = action_cb {
-                            action_cb.clone()(s);
-                        }
-                    },
-                ))
-                .on_event(Key::Left, |s| {
-                    s.pop_layer();
-                }),
-            );
         })
     }
 
@@ -205,16 +189,6 @@ impl AutocompletePopup {
                 self.focus = self.menu.children.len().saturating_sub(1)
             }
 
-            Event::Key(Key::Right)
-                if self.menu.children[self.focus].is_subtree() =>
-            {
-                return match self.menu.children[self.focus] {
-                    MenuItem::Subtree(_, ref tree) => {
-                        self.make_subtree_cb(tree)
-                    }
-                    _ => unreachable!("Child is a subtree"),
-                };
-            }
             Event::Key(Key::Enter)
                 if !self.menu.children[self.focus].is_delimiter() =>
             {
@@ -251,7 +225,16 @@ impl AutocompletePopup {
             Event::Key(Key::Esc) => {
                 return self.dismiss();
             }
-
+            Event::Char(ch) => {
+                let ch_toadd = ch.clone();
+                return EventResult::with_cb(move |s| {
+                    log::debug!("Pop layer");
+                    s.call_on_name("cli_input", |view: &mut CliView| {
+                        log::debug!("Popup callback");
+                        view.insert(ch_toadd);
+                    });
+                })
+            }
             _ => return EventResult::Ignored,
         }
 
