@@ -94,11 +94,22 @@ impl AutocompletePopup {
         Rc::new(tree)
     }
 
-    fn push(&mut self, ch: char) -> Callback {
+    fn push(&mut self, ch: char) -> EventResult {
         Rc::make_mut(&mut self.input).push(ch);
-        let tree = AutocompletePopup::autocomplete_tree(&autocomplete::autocomplete(&self.input));
-        self.menu = tree;
-        Callback::dummy()
+        let choices = &autocomplete::autocomplete(&self.input);
+        if choices.len() > 0 {
+            let tree = AutocompletePopup::autocomplete_tree(&choices);
+            self.menu = tree;
+            return EventResult::with_cb(move |s| {
+                log::debug!("Pop layer");
+                s.call_on_name("cli_input", |view: &mut CliView| {
+                    log::debug!("Popup callback");
+                    view.insert(ch);
+                });
+            })
+        } else {
+            self.dismiss()
+        }
     }
 
     fn item_width(item: &MenuItem) -> usize {
@@ -235,14 +246,7 @@ impl AutocompletePopup {
             }
             Event::Char(ch) => {
                 let ch_toadd = ch.clone();
-                self.push(ch);
-                return EventResult::with_cb(move |s| {
-                    log::debug!("Pop layer");
-                    s.call_on_name("cli_input", |view: &mut CliView| {
-                        log::debug!("Popup callback");
-                        view.insert(ch_toadd);
-                    });
-                })
+                return self.push(ch);
             }
             _ => return EventResult::Ignored,
         }
