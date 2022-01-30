@@ -87,6 +87,7 @@ impl CliView {
     }
 
     fn autocomplete_popup(&mut self, choices: Vec<String>) -> EventResult {
+        log::debug!("Creating autocomplete popup");
         let offset = XY::new(3, 4);
         let mut tree = MenuTree::new();
         for item in choices.iter() {
@@ -109,14 +110,21 @@ impl CliView {
                 OnEventView::new(
                     MenuPopup::new(tree)
                 )
-                    .on_event_inner(EventTrigger::any(), |s, event| {
+                    .on_event_inner(EventTrigger::any(), |_v, event| {
                         log::debug!("Event: {:?}", event);
                         match event {
                             Event::Char(ch) => {
                                 let ch_toadd = ch.clone();
                                 Some(EventResult::with_cb(move |s| {
+                                    log::debug!("Pop layer");
+                                    s.pop_layer();
                                     s.call_on_name("cli_input", |view: &mut CliView| {
+                                        log::debug!("Popup callback");
                                         view.insert(ch_toadd);
+                                    });
+                                    s.call_on_name("cli_input", |view: &mut CliView| {
+                                        log::debug!("Popup callback autocomplete");
+                                        view.autocomplete()
                                     });
                                 }))
                             },
@@ -125,6 +133,17 @@ impl CliView {
                     })
             );
         })
+    }
+
+    fn autocomplete(&mut self) -> EventResult {
+        log::debug!("Trigger autocompletion");
+        let completion = autocomplete::autocomplete(&self.content);
+        log::debug!("Autocompleting with choices {:?}", completion);
+        if completion.len() > 0 {
+            self.autocomplete_popup(completion)
+        } else {
+            EventResult::Consumed(None)
+        }
     }
 }
 
@@ -180,13 +199,7 @@ impl View for CliView {
                 })
             }
             Event::Key(Key::Tab) => {
-                log::debug!("Trigger autocompletion");
-                let completion = autocomplete::autocomplete(&self.content);
-                if completion.len() > 0 {
-                    self.autocomplete_popup(completion)
-                } else {
-                    EventResult::Consumed(None)
-                }
+                self.autocomplete()
             }
             _ => {
                 log::debug!("Got unknown event {:?}", event);
