@@ -49,6 +49,7 @@ use cursive::Vec2;
 use cursive::With;
 use std::rc::Rc;
 use unicode_width::UnicodeWidthStr;
+use crate::autocomplete::autocomplete;
 use crate::view::CliView;
 
 pub struct AutocompletePopup {
@@ -91,6 +92,13 @@ impl AutocompletePopup {
         }
 
         Rc::new(tree)
+    }
+
+    fn push(&mut self, ch: char) -> Callback {
+        Rc::make_mut(&mut self.input).push(ch);
+        let tree = AutocompletePopup::autocomplete_tree(&autocomplete::autocomplete(&self.input));
+        self.menu = tree;
+        Callback::dummy()
     }
 
     fn item_width(item: &MenuItem) -> usize {
@@ -227,6 +235,7 @@ impl AutocompletePopup {
             }
             Event::Char(ch) => {
                 let ch_toadd = ch.clone();
+                self.push(ch);
                 return EventResult::with_cb(move |s| {
                     log::debug!("Pop layer");
                     s.call_on_name("cli_input", |view: &mut CliView| {
