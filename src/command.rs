@@ -1,6 +1,6 @@
 /*
 
-Copyright or © or Copr. Paul Ezvan (2021)
+Copyright or © or Copr. Paul Ezvan (2021-2022)
 
 paul@ezvan.fr
 
