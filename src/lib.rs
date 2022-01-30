@@ -44,6 +44,7 @@ use flexi_logger::{LogTarget, Logger};
 use std::{env, error::Error, path::PathBuf};
 
 mod autocomplete;
+mod autocompleteview;
 mod command;
 mod file;
 mod ui;
