@@ -35,11 +35,10 @@ knowledge of the CeCILL license and that you accept its terms.
 */
 
 use cursive::direction::Direction;
-use cursive::event::{Callback, Event, EventResult, EventTrigger, Key};
+use cursive::event::{Callback, Event, EventResult, Key};
 use cursive::theme::{ColorStyle, Effect};
 use cursive::{Cursive, Printer, View, With, XY};
 use cursive::view::Position;
-use cursive::views::OnEventView;
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;

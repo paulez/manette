@@ -34,21 +34,18 @@ knowledge of the CeCILL license and that you accept its terms.
 
 */
 
-use cursive::Cursive;
 use cursive::align::Align;
 use cursive::event::{
     Callback, Event, EventResult, Key, MouseButton, MouseEvent,
 };
 use cursive::view::scroll;
 use cursive::impl_scroller;
-use cursive::menu::{MenuItem, MenuTree};
 use cursive::Printer;
 use cursive::view::View;
 use cursive::Rect;
 use cursive::Vec2;
 use cursive::With;
 use std::rc::Rc;
-use unicode_width::UnicodeWidthStr;
 use crate::autocomplete::autocomplete;
 use crate::view::CliView;
 
@@ -77,22 +74,6 @@ impl AutocompletePopup {
         }
     }
 
-    fn autocomplete_tree(choices: &Vec<String>) -> Rc<MenuTree> {
-        let mut tree = MenuTree::new();
-        for item in choices.iter() {
-            let to_add = item.clone();
-            tree.add_leaf(item.clone(), move |s| {
-                let mut content = to_add.clone();
-                content.push(' ');
-                s.call_on_name("cli_input", |view: &mut CliView| {
-                    view.set_content(content);
-                });
-            });
-        }
-
-        Rc::new(tree)
-    }
-
     fn push(&mut self, ch: char) -> EventResult {
         Rc::make_mut(&mut self.input).push(ch);
         let choices = autocomplete::autocomplete(&self.input);
@@ -114,27 +95,6 @@ impl AutocompletePopup {
             self.dismiss()
         }
     }
-
-    fn item_width(item: &MenuItem) -> usize {
-        match *item {
-            MenuItem::Delimiter => 1,
-            MenuItem::Leaf(ref title, _) => title.width(),
-            MenuItem::Subtree(ref title, _) => title.width() + 3,
-        }
-    }
-
-    pub fn on_action<F: 'static + Fn(&mut Cursive)>(self, f: F) -> Self {
-        self.with(|s| s.set_on_action(f))
-    }
-
-    pub fn set_on_action<F: 'static + Fn(&mut Cursive)>(&mut self, f: F) {
-        self.on_action = Some(Callback::from_fn(f));
-    }
-
-    pub fn update_choices(&mut self, choices: Rc<Vec<String>>) {
-        self.choices = choices;
-    }
-
 
     fn scroll_up(&mut self, mut n: usize, cycle: bool) {
         while n > 0 {
