@@ -45,6 +45,7 @@ use crate::userenv::userenv;
             choices.append(&mut executables_in_path_with_prefix(path, command));
         }
         choices.sort();
+        choices.dedup();
         choices
     }
 
