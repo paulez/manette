@@ -131,7 +131,7 @@ impl CliView {
         EventResult::with_cb(move |s| {
             s.screen_mut().add_layer_at(
                 Position::absolute(offset),
-                AutocompletePopup::new(content.clone(), &choices)
+                AutocompletePopup::new(content.clone(), Rc::new(choices.clone()))
             );
         })
     }

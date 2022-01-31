@@ -54,7 +54,7 @@ use crate::view::CliView;
 
 pub struct AutocompletePopup {
     input: Rc<String>,
-    menu: Rc<MenuTree>,
+    choices: Rc<Vec<String>>,
     focus: usize,
     scroll_core: scroll::Core,
     align: Align,
@@ -65,11 +65,10 @@ pub struct AutocompletePopup {
 impl_scroller!(AutocompletePopup::scroll_core);
 
 impl AutocompletePopup {
-    pub fn new(input: Rc<String>, choices: &Vec<String>) -> Self {
-        let menu = AutocompletePopup::autocomplete_tree(choices);
+    pub fn new(input: Rc<String>, choices: Rc<Vec<String>>) -> Self {
         AutocompletePopup {
             input,
-            menu,
+            choices,
             focus: 0,
             scroll_core: scroll::Core::new(),
             align: Align::top_left(),
@@ -96,15 +95,14 @@ impl AutocompletePopup {
 
     fn push(&mut self, ch: char) -> EventResult {
         Rc::make_mut(&mut self.input).push(ch);
-        let choices = &autocomplete::autocomplete(&self.input);
+        let choices = autocomplete::autocomplete(&self.input);
         if choices.len() > 0 {
-            let tree = AutocompletePopup::autocomplete_tree(&choices);
-            let focused_item = self.menu.children[self.focus];
-            let new_focus = match tree.children.iter().position(|&r| r == focused_item) {
+            let focused_item = &self.choices[self.focus];
+            let new_focus = match choices.iter().position(|r| r == focused_item) {
                 Some(focus) => focus,
                 None => 0,
             };
-            self.menu = tree;
+            self.choices = Rc::new(choices);
             return EventResult::with_cb(move |s| {
                 s.call_on_name("cli_input", |view: &mut CliView| {
                     log::debug!("Popup callback");
@@ -132,8 +130,8 @@ impl AutocompletePopup {
         self.on_action = Some(Callback::from_fn(f));
     }
 
-    pub fn update_menu(&mut self, menu: Rc<MenuTree>) {
-        self.menu = menu;
+    pub fn update_choices(&mut self, choices: Rc<Vec<String>>) {
+        self.choices = choices;
     }
 
 
@@ -142,20 +140,17 @@ impl AutocompletePopup {
             if self.focus > 0 {
                 self.focus -= 1;
             } else if cycle {
-                self.focus = self.menu.children.len() - 1;
+                self.focus = self.choices.len() - 1;
             } else {
                 break;
             }
-
-            if !self.menu.children[self.focus].is_delimiter() {
-                n -= 1;
-            }
+            n -= 1;
         }
     }
 
     fn scroll_down(&mut self, mut n: usize, cycle: bool) {
         while n > 0 {
-            if self.focus + 1 < self.menu.children.len() {
+            if self.focus + 1 < self.choices.len() {
                 self.focus += 1;
             } else if cycle {
                 self.focus = 0;
@@ -164,30 +159,20 @@ impl AutocompletePopup {
                 break;
             }
 
-            if !self.menu.children[self.focus].is_delimiter() {
-                n -= 1;
-            }
+            n -= 1;
         }
     }
 
     fn submit(&mut self) -> EventResult {
-        match self.menu.children[self.focus] {
-            MenuItem::Leaf(_, ref cb) => {
-                let cb = cb.clone();
-                let action_cb = self.on_action.clone();
-                EventResult::with_cb(move |s| {
-                    // Remove ourselves from the face of the earth
-                    s.pop_layer();
-                    // If we had prior orders, do it now.
-                    if let Some(ref action_cb) = action_cb {
-                        action_cb.clone()(s);
-                    }
-                    // And transmit his last words.
-                    cb.clone()(s);
-                })
+        let action_cb = self.on_action.clone();
+        EventResult::with_cb(move |s| {
+            // Remove ourselves from the face of the earth
+            s.pop_layer();
+            // If we had prior orders, do it now.
+            if let Some(ref action_cb) = action_cb {
+                action_cb.clone()(s);
             }
-            _ => unreachable!("Delimiters cannot be submitted."),
-        }
+        })
     }
 
     fn dismiss(&mut self) -> EventResult {
@@ -209,12 +194,10 @@ impl AutocompletePopup {
 
             Event::Key(Key::Home) => self.focus = 0,
             Event::Key(Key::End) => {
-                self.focus = self.menu.children.len().saturating_sub(1)
+                self.focus = self.choices.len().saturating_sub(1)
             }
 
-            Event::Key(Key::Enter)
-                if !self.menu.children[self.focus].is_delimiter() =>
-            {
+            Event::Key(Key::Enter) => {
                 return self.submit();
             }
             Event::Mouse {
@@ -226,8 +209,7 @@ impl AutocompletePopup {
                 if let Some(position) = position.checked_sub(offset) {
                     // Now `position` is relative to the top-left of the content.
                     let focus = position.y;
-                    if focus < self.menu.len()
-                        && !self.menu.children[focus].is_delimiter()
+                    if focus < self.choices.len()
                     {
                         self.focus = focus;
                     }
@@ -237,8 +219,7 @@ impl AutocompletePopup {
                 event: MouseEvent::Release(MouseButton::Left),
                 position,
                 offset,
-            } if !self.menu.children[self.focus].is_delimiter()
-                && position
+            } if position
                     .checked_sub(offset)
                     .map(|position| position.y == self.focus)
                     .unwrap_or(false) =>
@@ -259,21 +240,20 @@ impl AutocompletePopup {
     }
 
     fn inner_required_size(&mut self, _req: Vec2) -> Vec2 {
-        let w = 2 + self
-            .menu
-            .children
+       let w = 2 + self
+            .choices
             .iter()
-            .map(Self::item_width)
+            .map(|x| x.len())
             .max()
             .unwrap_or(1);
 
-        let h = self.menu.children.len();
+        let h = self.choices.len();
 
         Vec2::new(w, h)
     }
 
     fn inner_important_area(&self, size: Vec2) -> Rect {
-        if self.menu.is_empty() {
+        if self.choices.is_empty() {
             return Rect::from((0, 0));
         }
 
@@ -289,7 +269,7 @@ impl View for AutocompletePopup {
             return;
         }
 
-        let h = self.menu.len();
+        let h = self.choices.len();
         // If we're too high, add a vertical offset
         let offset = self.align.v.get_offset(h, printer.size.y);
         let printer = &printer.offset((0, offset));
@@ -298,7 +278,7 @@ impl View for AutocompletePopup {
         scroll::draw_box_frame(
             self,
             &printer,
-            |s, y| s.menu.children[y].is_delimiter(),
+            |_s, _y| false,
             |_s, _x| false,
         );
 
@@ -307,33 +287,13 @@ impl View for AutocompletePopup {
 
         scroll::draw_lines(self, &printer, |s, printer, i| {
             printer.with_selection(i == s.focus, |printer| {
-                let item = &s.menu.children[i];
-                match *item {
-                    MenuItem::Delimiter => {
-                        // printer.print_hdelim((0, 0), printer.size.x)
-                        printer.print_hline((0, 0), printer.size.x, "─");
-                    }
-                    MenuItem::Subtree(ref label, _) => {
-                        if printer.size.x < 4 {
-                            return;
-                        }
-                        printer.print_hline((0, 0), printer.size.x, " ");
-                        printer.print((1, 0), label);
-                        let x = printer.size.x.saturating_sub(3);
-                        printer.print((x, 0), ">>");
-                    }
-                    MenuItem::Leaf(ref label, _) => {
-                        if printer.size.x < 2 {
-                            return;
-                        }
-                        printer.print_hline((0, 0), printer.size.x, " ");
-                        printer.print((1, 0), label);
-                    }
-                }
+                let item = &s.choices[i];
+                printer.print_hline((0, 0), printer.size.x, " ");
+                printer.print((1, 0), item);
             });
         });
     }
-  fn required_size(&mut self, req: Vec2) -> Vec2 {
+    fn required_size(&mut self, req: Vec2) -> Vec2 {
         // We can't really shrink our items here, so it's not flexible.
 
         // 2 is the padding
