@@ -102,6 +102,7 @@ impl AutocompletePopup {
                 Some(focus) => focus,
                 None => 0,
             };
+            self.focus = new_focus;
             self.choices = Rc::new(choices);
             return EventResult::with_cb(move |s| {
                 s.call_on_name("cli_input", |view: &mut CliView| {
