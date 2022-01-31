@@ -165,6 +165,7 @@ impl AutocompletePopup {
 
     fn submit(&mut self) -> EventResult {
         let action_cb = self.on_action.clone();
+        let item = self.choices[self.focus].clone();
         EventResult::with_cb(move |s| {
             // Remove ourselves from the face of the earth
             s.pop_layer();
@@ -172,6 +173,11 @@ impl AutocompletePopup {
             if let Some(ref action_cb) = action_cb {
                 action_cb.clone()(s);
             }
+            let mut content = item.clone();
+            content.push(' ');
+            s.call_on_name("cli_input", |view: &mut CliView| {
+                view.set_content(content);
+            });
         })
     }
 
@@ -230,7 +236,6 @@ impl AutocompletePopup {
                 return self.dismiss();
             }
             Event::Char(ch) => {
-                let ch_toadd = ch.clone();
                 return self.push(ch);
             }
             _ => return EventResult::Ignored,
