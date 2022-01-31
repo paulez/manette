@@ -99,9 +99,13 @@ impl AutocompletePopup {
         let choices = &autocomplete::autocomplete(&self.input);
         if choices.len() > 0 {
             let tree = AutocompletePopup::autocomplete_tree(&choices);
+            let focused_item = self.menu.children[self.focus];
+            let new_focus = match tree.children.iter().position(|&r| r == focused_item) {
+                Some(focus) => focus,
+                None => 0,
+            };
             self.menu = tree;
             return EventResult::with_cb(move |s| {
-                log::debug!("Pop layer");
                 s.call_on_name("cli_input", |view: &mut CliView| {
                     log::debug!("Popup callback");
                     view.insert(ch);
