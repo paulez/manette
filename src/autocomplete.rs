@@ -37,6 +37,7 @@ knowledge of the CeCILL license and that you accept its terms.
 pub mod autocomplete {
     use std::os::unix::fs::PermissionsExt;
     use crate::userenv::userenv;
+    use std::env;
     use std::fs;
 
     enum CompletionType {
@@ -54,11 +55,11 @@ pub mod autocomplete {
         let command_args = build_command_arguments(command);
         match get_completion_type(&command_args) {
             CompletionType::File => {
-                log::debug!("File completion not implemented");
+                choices.append(&mut autocomplete_path(command_args));
             },
             CompletionType::Executable => {
                 for path in userenv::path().split(":") {
-                    choices.append(&mut executables_in_path_with_prefix(path, command));
+                    choices.append(&mut executables_in_path_with_prefix(path, &command_args.command));
                 }
             }
         }
@@ -138,5 +139,42 @@ pub mod autocomplete {
                 vec![]
             }
         }
+    }
+
+
+    fn autocomplete_path(command_args: CommandArguments) -> Vec<String> {
+        let empty_arg = String::from("");
+        let current_arg = match command_args.arguments.last().clone() {
+            Some(arg) => arg,
+            None => &empty_arg,
+        };
+        let mut path_strings: Vec<String> = Vec::new();
+        match env::current_dir() {
+            Ok(current_dir) => {
+                match fs::read_dir(current_dir) {
+                    Ok(paths) => {
+                        for entry in paths {
+                            match entry {
+                                Ok(entry) => {
+                                    let name = entry.file_name();
+                                    match name.into_string() {
+                                        Ok(file_name) => {
+                                            if file_name.starts_with(current_arg) {
+                                                path_strings.push(file_name);
+                                            }
+                                        },
+                                        Err(_) => log::error!("Unable to convert patch to string: {:?}", entry),
+                                    }
+                                }
+                                Err(_) => log::error!("Unable to read entry {:?}", entry),
+                            }
+                        }
+                    },
+                    Err(_) => log::error!("Unable to read current dir"),
+                }
+            },
+            Err(_) => log::error!("Cannot get current directory"),
+        };
+        path_strings
     }
 }
