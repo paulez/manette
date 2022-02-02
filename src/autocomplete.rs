@@ -36,17 +36,60 @@ knowledge of the CeCILL license and that you accept its terms.
 
 pub mod autocomplete {
     use std::os::unix::fs::PermissionsExt;
-use crate::userenv::userenv;
+    use crate::userenv::userenv;
     use std::fs;
+
+    enum CompletionType {
+        Executable,
+        File,
+    }
+
+    struct CommandArguments {
+        command: String,
+        arguments: Vec<String>
+    }
 
     pub fn autocomplete(command: &str) -> Vec<String> {
         let mut choices: Vec<String> = Vec::new();
-        for path in userenv::path().split(":") {
-            choices.append(&mut executables_in_path_with_prefix(path, command));
+        let command_args = build_command_arguments(command);
+        match get_completion_type(&command_args) {
+            CompletionType::File => {
+                log::debug!("File completion not implemented");
+            },
+            CompletionType::Executable => {
+                for path in userenv::path().split(":") {
+                    choices.append(&mut executables_in_path_with_prefix(path, command));
+                }
+            }
         }
         choices.sort();
         choices.dedup();
         choices
+    }
+
+    fn get_completion_type(command_args: &CommandArguments) -> CompletionType {
+        if command_args.arguments.len() > 0 {
+            CompletionType::File
+        } else {
+            CompletionType::Executable
+        }
+    }
+
+    fn build_command_arguments(input_command: &str) -> CommandArguments {
+        let items: Vec<&str> = input_command.split(" ").collect();
+        let mut arguments: Vec<String> = Vec::new();
+        let mut command: String = String::new();
+        for (i, item) in items.iter().enumerate() {
+            if i == 0 {
+                command = item.to_string();
+            } else {
+                arguments.push(item.to_string());
+            }
+        }
+        CommandArguments {
+            command,
+            arguments
+        }
     }
 
     fn executables_in_path_with_prefix(path: &str, prefix: &str) -> Vec<String> {
