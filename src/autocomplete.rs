@@ -33,9 +33,42 @@ The fact that you are presently reading this means that you have had
 knowledge of the CeCILL license and that you accept its terms.
 
 */
+use std::cmp::Ordering;
+
+#[derive(Clone, Debug, Eq)]
+pub struct CompletionChoice {
+    pub label: String,
+    pub completion: String,
+}
+
+impl PartialEq for CompletionChoice {
+    fn eq(&self, other: &Self) -> bool {
+        self.label == other.label
+    }
+}
+
+impl PartialEq<String> for CompletionChoice {
+    fn eq(&self, other: &String) -> bool {
+        &self.label == other
+    }
+}
+
+impl Ord for CompletionChoice {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.label.cmp(&other.label)
+    }
+}
+
+impl PartialOrd for CompletionChoice {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 
 pub mod autocomplete {
     use std::os::unix::fs::PermissionsExt;
+    use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
     use std::env;
     use std::fs;
@@ -50,8 +83,8 @@ pub mod autocomplete {
         arguments: Vec<String>
     }
 
-    pub fn autocomplete(command: &str) -> Vec<String> {
-        let mut choices: Vec<String> = Vec::new();
+    pub fn autocomplete(command: &str) -> Vec<CompletionChoice> {
+        let mut choices: Vec<CompletionChoice> = Vec::new();
         let command_args = build_command_arguments(command);
         match get_completion_type(&command_args) {
             CompletionType::File => {
@@ -93,10 +126,10 @@ pub mod autocomplete {
         }
     }
 
-    fn executables_in_path_with_prefix(path: &str, prefix: &str) -> Vec<String> {
+    fn executables_in_path_with_prefix(path: &str, prefix: &str) -> Vec<CompletionChoice> {
         match fs::read_dir(path) {
             Ok(paths) => {
-                let mut path_strings: Vec<String> = Vec::new();
+                let mut path_strings: Vec<CompletionChoice> = Vec::new();
 
                 for entry in paths {
                     match entry {
@@ -113,7 +146,11 @@ pub mod autocomplete {
                                             Ok(metadata) => {
                                                 let permissions = metadata.permissions();
                                                 if permissions.mode() & 0o111 != 0 {
-                                                    path_strings.push(filenamestring);
+                                                    let completion = CompletionChoice {
+                                                        label: filenamestring.clone(),
+                                                        completion: filenamestring
+                                                    };
+                                                    path_strings.push(completion);
                                                 }
                                             }
                                             Err(_err) => {
@@ -142,13 +179,13 @@ pub mod autocomplete {
     }
 
 
-    fn autocomplete_path(command_args: CommandArguments) -> Vec<String> {
+    fn autocomplete_path(command_args: CommandArguments) -> Vec<CompletionChoice> {
         let empty_arg = String::from("");
         let current_arg = match command_args.arguments.last().clone() {
             Some(arg) => arg,
             None => &empty_arg,
         };
-        let mut path_strings: Vec<String> = Vec::new();
+        let mut path_strings: Vec<CompletionChoice> = Vec::new();
         match env::current_dir() {
             Ok(current_dir) => {
                 match fs::read_dir(current_dir) {
@@ -160,7 +197,11 @@ pub mod autocomplete {
                                     match name.into_string() {
                                         Ok(file_name) => {
                                             if file_name.starts_with(current_arg) {
-                                                path_strings.push(file_name);
+                                                let completion = CompletionChoice{
+                                                    label: file_name.clone(),
+                                                    completion: file_name
+                                                };
+                                                path_strings.push(completion);
                                             }
                                         },
                                         Err(_) => log::error!("Unable to convert patch to string: {:?}", entry),

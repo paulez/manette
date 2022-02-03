@@ -46,12 +46,12 @@ use cursive::Rect;
 use cursive::Vec2;
 use cursive::With;
 use std::rc::Rc;
-use crate::autocomplete::autocomplete;
+use crate::autocomplete::{autocomplete, CompletionChoice};
 use crate::view::CliView;
 
 pub struct AutocompletePopup {
     input: Rc<String>,
-    choices: Rc<Vec<String>>,
+    choices: Rc<Vec<CompletionChoice>>,
     focus: usize,
     scroll_core: scroll::Core,
     align: Align,
@@ -62,7 +62,7 @@ pub struct AutocompletePopup {
 impl_scroller!(AutocompletePopup::scroll_core);
 
 impl AutocompletePopup {
-    pub fn new(input: Rc<String>, choices: Rc<Vec<String>>) -> Self {
+    pub fn new(input: Rc<String>, choices: Rc<Vec<CompletionChoice>>) -> Self {
         AutocompletePopup {
             input,
             choices,
@@ -126,7 +126,7 @@ impl AutocompletePopup {
 
     fn submit(&mut self) -> EventResult {
         let action_cb = self.on_action.clone();
-        let item = self.choices[self.focus].clone();
+        let completion = self.choices[self.focus].completion.clone();
         EventResult::with_cb(move |s| {
             // Remove ourselves from the face of the earth
             s.pop_layer();
@@ -134,7 +134,7 @@ impl AutocompletePopup {
             if let Some(ref action_cb) = action_cb {
                 action_cb.clone()(s);
             }
-            let mut content = item.clone();
+            let mut content = completion.clone();
             content.push(' ');
             s.call_on_name("cli_input", |view: &mut CliView| {
                 view.set_content(content);
@@ -209,7 +209,7 @@ impl AutocompletePopup {
        let w = 2 + self
             .choices
             .iter()
-            .map(|x| x.len())
+            .map(|x| x.label.len())
             .max()
             .unwrap_or(1);
 
@@ -255,7 +255,7 @@ impl View for AutocompletePopup {
             printer.with_selection(i == s.focus, |printer| {
                 let item = &s.choices[i];
                 printer.print_hline((0, 0), printer.size.x, " ");
-                printer.print((1, 0), item);
+                printer.print((1, 0), &item.label);
             });
         });
     }

@@ -42,7 +42,7 @@ use cursive::view::Position;
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-use crate::autocomplete::autocomplete;
+use crate::autocomplete::{autocomplete, CompletionChoice};
 use crate::autocompleteview::AutocompletePopup;
 
 pub struct CliView {
@@ -122,7 +122,7 @@ impl CliView {
     }
 
 
-    fn autocomplete_popup(&mut self, choices: Vec<String>) -> EventResult {
+    fn autocomplete_popup(&mut self, choices: Vec<CompletionChoice>) -> EventResult {
         log::debug!("Creating autocomplete popup");
         let offset = XY::new(3, 4);
 
