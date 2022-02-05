@@ -70,6 +70,7 @@ pub mod autocomplete {
     use std::os::unix::fs::PermissionsExt;
     use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
+    use std::fmt;
     use std::env;
     use std::fs;
 
@@ -78,9 +79,17 @@ pub mod autocomplete {
         File,
     }
 
+    #[derive(Clone, Debug)]
     struct CommandArguments {
         command: String,
         arguments: Vec<String>
+    }
+
+
+    impl fmt::Display for CommandArguments {
+        fn fmt(&self, f:&mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{} {}", self.command, self.arguments.join(" "))
+        }
     }
 
     pub fn autocomplete(command: &str) -> Vec<CompletionChoice> {
@@ -199,7 +208,7 @@ pub mod autocomplete {
                                             if file_name.starts_with(current_arg) {
                                                 let completion = CompletionChoice{
                                                     label: file_name.clone(),
-                                                    completion: file_name
+                                                    completion: path_full_completion(command_args.clone(), file_name)
                                                 };
                                                 path_strings.push(completion);
                                             }
@@ -217,5 +226,13 @@ pub mod autocomplete {
             Err(_) => log::error!("Cannot get current directory"),
         };
         path_strings
+    }
+
+    fn path_full_completion(mut args: CommandArguments, completion: String) -> String {
+        if args.arguments.len() > 0 {
+            args.arguments.pop();
+        }
+        args.arguments.push(completion);
+        args.to_string()
     }
 }
