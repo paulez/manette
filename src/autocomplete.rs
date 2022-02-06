@@ -67,9 +67,12 @@ impl PartialOrd for CompletionChoice {
 
 
 pub mod autocomplete {
+    use anyhow::{Error, Result};
     use std::os::unix::fs::PermissionsExt;
     use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
+    use std::error;
+    use std::ffi::OsString;
     use std::fmt;
     use std::env;
     use std::fs;
@@ -92,12 +95,32 @@ pub mod autocomplete {
         }
     }
 
-    pub fn autocomplete(command: &str) -> Vec<CompletionChoice> {
+    #[derive(Debug)]
+    enum AutoCompleteError {
+        NonUnicodePath(OsString),
+    }
+
+    impl fmt::Display for AutoCompleteError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match *self {
+                AutoCompleteError::NonUnicodePath(ref err) => write!(f, "Invalid Unicode path"),
+            }
+        }
+    }
+    impl error::Error for AutoCompleteError {
+        fn description(&self) -> &str {
+            match *self {
+                AutoCompleteError::NonUnicodePath(_) => "Invalid Unicode path",
+            }
+        }
+    }
+
+    pub fn autocomplete(command: &str) -> Result<Vec<CompletionChoice>> {
         let mut choices: Vec<CompletionChoice> = Vec::new();
         let command_args = build_command_arguments(command);
         match get_completion_type(&command_args) {
             CompletionType::File => {
-                choices.append(&mut autocomplete_path(command_args));
+                choices.append(&mut autocomplete_path(command_args)?);
             },
             CompletionType::Executable => {
                 for path in userenv::path().split(":") {
@@ -107,7 +130,7 @@ pub mod autocomplete {
         }
         choices.sort();
         choices.dedup();
-        choices
+        Ok(choices)
     }
 
     fn get_completion_type(command_args: &CommandArguments) -> CompletionType {
@@ -188,7 +211,8 @@ pub mod autocomplete {
     }
 
 
-    fn autocomplete_path(command_args: CommandArguments) -> Vec<CompletionChoice> {
+    fn autocomplete_path(command_args: CommandArguments) -> Result<Vec<CompletionChoice>> {
+        log::debug!("Autocompleting path: {:?}", command_args);
         let empty_arg = String::from("");
         let current_arg = match command_args.arguments.last().clone() {
             Some(arg) => arg,
@@ -203,19 +227,16 @@ pub mod autocomplete {
                             match entry {
                                 Ok(entry) => {
                                     let name = entry.file_name();
-                                    match name.into_string() {
-                                        Ok(file_name) => {
-                                            if file_name.starts_with(current_arg) {
-                                                let completion = CompletionChoice{
-                                                    label: file_name.clone(),
-                                                    completion: path_full_completion(command_args.clone(), file_name)
-                                                };
-                                                path_strings.push(completion);
-                                            }
-                                        },
-                                        Err(_) => log::error!("Unable to convert patch to string: {:?}", entry),
+                                    let file_name = name.into_string()
+                                        .map_err(AutoCompleteError::NonUnicodePath)?;
+                                    if file_name.starts_with(current_arg) {
+                                        let completion = CompletionChoice{
+                                            label: file_name.clone(),
+                                            completion: path_full_completion(command_args.clone(), file_name)
+                                        };
+                                        path_strings.push(completion);
                                     }
-                                }
+                                },
                                 Err(_) => log::error!("Unable to read entry {:?}", entry),
                             }
                         }
@@ -225,7 +246,7 @@ pub mod autocomplete {
             },
             Err(_) => log::error!("Cannot get current directory"),
         };
-        path_strings
+        Ok(path_strings)
     }
 
     fn path_full_completion(mut args: CommandArguments, completion: String) -> String {

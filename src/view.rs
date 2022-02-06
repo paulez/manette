@@ -139,10 +139,18 @@ impl CliView {
         log::debug!("Trigger autocompletion");
         let completion = autocomplete::autocomplete(&self.content);
         log::debug!("Autocompleting with choices {:?}", completion);
-        if completion.len() > 0 {
-            self.autocomplete_popup(completion)
-        } else {
-            EventResult::Consumed(None)
+        match completion {
+            Ok(completion) => {
+                if completion.len() > 0 {
+                    self.autocomplete_popup(completion)
+                } else {
+                    EventResult::Consumed(None)
+                }
+            }
+            Err(err) => {
+                log::error!("Cannot autocomplete: {:?}", err);
+                EventResult::Consumed(None)
+            }
         }
     }
 }
