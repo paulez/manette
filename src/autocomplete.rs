@@ -71,11 +71,8 @@ pub mod autocomplete {
     use std::os::unix::fs::PermissionsExt;
     use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
-    use std::error;
     use std::ffi::OsString;
-    use std::fmt;
-    use std::env;
-    use std::fs;
+    use std::{env, error, io, fmt, fs};
 
     enum CompletionType {
         Executable,
@@ -218,35 +215,24 @@ pub mod autocomplete {
             Some(arg) => arg,
             None => &empty_arg,
         };
-        let mut path_strings: Vec<CompletionChoice> = Vec::new();
-        match env::current_dir() {
-            Ok(current_dir) => {
-                match fs::read_dir(current_dir) {
-                    Ok(paths) => {
-                        for entry in paths {
-                            match entry {
-                                Ok(entry) => {
-                                    let name = entry.file_name();
-                                    let file_name = name.into_string()
-                                        .map_err(AutoCompleteError::NonUnicodePath)?;
-                                    if file_name.starts_with(current_arg) {
-                                        let completion = CompletionChoice{
-                                            label: file_name.clone(),
-                                            completion: path_full_completion(command_args.clone(), file_name)
-                                        };
-                                        path_strings.push(completion);
-                                    }
-                                },
-                                Err(_) => log::error!("Unable to read entry {:?}", entry),
-                            }
-                        }
-                    },
-                    Err(_) => log::error!("Unable to read current dir"),
-                }
-            },
-            Err(_) => log::error!("Cannot get current directory"),
-        };
-        Ok(path_strings)
+        let current_dir = env::current_dir()?;
+        let paths = fs::read_dir(current_dir)?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()?;
+        let paths = paths
+            .iter()
+            .filter_map(|p| p.file_name())
+            .filter_map(|name| name.to_str())
+            .collect::<Vec<&str>>();
+        let completions = paths
+            .iter()
+            .filter(|p| p.starts_with(current_arg))
+            .map(|p| CompletionChoice{
+                label: p.to_string(),
+                completion: path_full_completion(command_args.clone(), p.to_string())
+            })
+            .collect::<Vec<CompletionChoice>>();
+        Ok(completions)
     }
 
     fn path_full_completion(mut args: CommandArguments, completion: String) -> String {
