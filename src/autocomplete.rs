@@ -73,6 +73,7 @@ pub mod autocomplete {
     use crate::userenv::userenv;
     use std::ffi::OsString;
     use std::{env, error, io, fmt, fs};
+    use std::path::PathBuf;
 
     enum CompletionType {
         Executable,
@@ -100,7 +101,7 @@ pub mod autocomplete {
     impl fmt::Display for AutoCompleteError {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match *self {
-                AutoCompleteError::NonUnicodePath(ref err) => write!(f, "Invalid Unicode path"),
+                AutoCompleteError::NonUnicodePath(_) => write!(f, "Invalid Unicode path"),
             }
         }
     }
@@ -113,18 +114,18 @@ pub mod autocomplete {
     }
 
     pub fn autocomplete(command: &str) -> Result<Vec<CompletionChoice>> {
-        let mut choices: Vec<CompletionChoice> = Vec::new();
         let command_args = build_command_arguments(command);
-        match get_completion_type(&command_args) {
+        let mut choices: Vec<CompletionChoice> = match get_completion_type(&command_args) {
             CompletionType::File => {
-                choices.append(&mut autocomplete_path(command_args)?);
+                autocomplete_path(command_args)?
             },
             CompletionType::Executable => {
-                for path in userenv::path().split(":") {
-                    choices.append(&mut executables_in_path_with_prefix(path, &command_args.command));
-                }
+                userenv::path().split(":")
+                    .filter_map(|path| executables_in_path_with_prefix(path, &command_args.command).ok())
+                    .flatten()
+                    .collect::<Vec<CompletionChoice>>()
             }
-        }
+        };
         choices.sort();
         choices.dedup();
         Ok(choices)
@@ -155,56 +156,38 @@ pub mod autocomplete {
         }
     }
 
-    fn executables_in_path_with_prefix(path: &str, prefix: &str) -> Vec<CompletionChoice> {
-        match fs::read_dir(path) {
-            Ok(paths) => {
-                let mut path_strings: Vec<CompletionChoice> = Vec::new();
-
-                for entry in paths {
-                    match entry {
-                        Ok(entry) => {
-                            let filename = entry.file_name();
-                            let filenamestr = filename.to_str();
-                            match filenamestr {
-                                Some(filenamestr) => {
-                                    let filenamestring = filenamestr.to_string();
-                                    if filenamestring.starts_with(prefix) {
-                                        log::debug!("Testing entry metadata: {:?}", entry);
-                                        let metadata = entry.metadata();
-                                        match metadata {
-                                            Ok(metadata) => {
-                                                let permissions = metadata.permissions();
-                                                if permissions.mode() & 0o111 != 0 {
-                                                    let completion = CompletionChoice {
-                                                        label: filenamestring.clone(),
-                                                        completion: filenamestring
-                                                    };
-                                                    path_strings.push(completion);
-                                                }
-                                            }
-                                            Err(_err) => {
-                                                log::warn!("Cannot read metadata for {:?}", entry);
-                                            }
-                                        }
-                                    }
-                                }
-                                None => {
-                                    log::warn!("Cannot convert into str: {:?}", entry);
-                                }
-                            }
-                        }
-                        Err(ref _err) => {
-                            log::warn!("Cannot read entry {:?}", entry);
-                        }
+    fn executables_in_path_with_prefix(path: &str, prefix: &str) -> Result<Vec<CompletionChoice>> {
+        let paths = fs::read_dir(path)?
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()?;
+        let paths = paths
+            .iter()
+            .filter_map(|p| p.file_name().map(|filename| (p, filename)))
+            .filter_map(|(p, name)| name.to_str().map(|name| (p, name)))
+            .collect::<Vec<(&PathBuf, &str)>>();
+        let completions = paths
+            .iter()
+            .filter(|(p, name)| p.starts_with(prefix))
+            .filter_map(|(p, name)| {
+                match p.metadata() {
+                    Ok(metadata) => Some((metadata, name)),
+                    Err(err) => {
+                        log::error!("Cannot read metadata: {:?}", err);
+                        None
                     }
                 }
-                path_strings
-            }
-            Err(_err) => {
-                log::warn!("Cannot read {:?}", path);
-                vec![]
-            }
-        }
+            })
+            .filter(|(metadata, name)| {
+                let permissions = metadata.permissions();
+                permissions.mode() & 0o111 != 0
+            })
+            .map(|(p, name)| CompletionChoice{
+                label: name.to_string(),
+                completion: name.to_string()
+            })
+            .collect::<Vec<CompletionChoice>>();
+        Ok(completions)
+
     }
 
 
