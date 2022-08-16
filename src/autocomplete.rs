@@ -167,7 +167,7 @@ pub mod autocomplete {
             .collect::<Vec<(&PathBuf, &str)>>();
         let completions = paths
             .iter()
-            .filter(|(p, name)| p.starts_with(prefix))
+            .filter(|(p, _name)| p.starts_with(prefix))
             .filter_map(|(p, name)| {
                 match p.metadata() {
                     Ok(metadata) => Some((metadata, name)),
@@ -177,7 +177,7 @@ pub mod autocomplete {
                     }
                 }
             })
-            .filter(|(metadata, name)| {
+            .filter(|(metadata, _name)| {
                 let permissions = metadata.permissions();
                 permissions.mode() & 0o111 != 0
             })
@@ -223,6 +223,7 @@ pub mod autocomplete {
             args.arguments.pop();
         }
         args.arguments.push(completion);
+        log::debug!("Pushing completion: {:?}", args.to_string());
         args.to_string()
     }
 }
