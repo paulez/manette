@@ -142,7 +142,7 @@ impl AutocompletePopup {
             if let Some(ref action_cb) = action_cb {
                 action_cb.clone()(s);
             }
-            let mut content = completion.clone();
+            let content = completion.clone();
             s.call_on_name("cli_input", |view: &mut CliView| {
                 view.set_content(content);
             });

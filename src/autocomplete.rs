@@ -67,7 +67,7 @@ impl PartialOrd for CompletionChoice {
 
 
 pub mod autocomplete {
-    use anyhow::{Error, Result};
+    use anyhow::Result;
     use std::os::unix::fs::PermissionsExt;
     use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
@@ -80,6 +80,7 @@ pub mod autocomplete {
         File,
     }
 
+    // Represents command and arguments provided on the CLI
     #[derive(Clone, Debug)]
     struct CommandArguments {
         command: String,
@@ -117,7 +118,7 @@ pub mod autocomplete {
         let command_args = build_command_arguments(command);
         let mut choices: Vec<CompletionChoice> = match get_completion_type(&command_args) {
             CompletionType::File => {
-                autocomplete_path(command_args)?
+                autocomplete_path(command_args, None)?
             },
             CompletionType::Executable => {
                 userenv::path().split(":")
@@ -181,7 +182,7 @@ pub mod autocomplete {
                 let permissions = metadata.permissions();
                 permissions.mode() & 0o111 != 0
             })
-            .map(|(p, name)| CompletionChoice{
+            .map(|(_p, name)| CompletionChoice{
                 label: name.to_string(),
                 completion: name.to_string()
             })
@@ -191,14 +192,17 @@ pub mod autocomplete {
     }
 
 
-    fn autocomplete_path(command_args: CommandArguments) -> Result<Vec<CompletionChoice>> {
+    fn autocomplete_path(command_args: CommandArguments, current_dir: Option<PathBuf>) -> Result<Vec<CompletionChoice>> {
         log::debug!("Autocompleting path: {:?}", command_args);
         let empty_arg = String::from("");
         let current_arg = match command_args.arguments.last().clone() {
             Some(arg) => arg,
             None => &empty_arg,
         };
-        let current_dir = env::current_dir()?;
+        let current_dir = match current_dir {
+            None => env::current_dir()?,
+            Some(path) => path,
+        };
         let paths = fs::read_dir(current_dir)?
             .map(|res| res.map(|e| e.path()))
             .collect::<Result<Vec<_>, io::Error>>()?;
@@ -225,5 +229,34 @@ pub mod autocomplete {
         args.arguments.push(completion);
         log::debug!("Pushing completion: {:?}", args.to_string());
         args.to_string()
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        #[test]
+        fn test_autocomplete_path() {
+            fs::create_dir_all("/tmp/manette/test").unwrap();
+            fs::write("/tmp/manette/test/a", "").unwrap();
+            fs::write("/tmp/manette/test/b", "").unwrap();
+            let test_path = PathBuf::from("/tmp/manette/test");
+            let test_args = CommandArguments {
+                command: String::from("ls"),
+                arguments: vec![],
+            };
+            let mut results = autocomplete_path(test_args, Some(test_path)).unwrap();
+            results.sort();
+            assert_eq!(results, vec![
+                CompletionChoice{
+                    label: String::from("a"),
+                    completion: String::from("ls a"),
+                },
+                CompletionChoice{
+                    label: String::from("b"),
+                    completion: String::from("ls b"),
+                },
+            ]);
+            fs::remove_dir_all("/tmp/manette").unwrap();
+        }
     }
 }
