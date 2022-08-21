@@ -34,20 +34,18 @@ knowledge of the CeCILL license and that you accept its terms.
 
 */
 
+use crate::autocomplete::{autocomplete, CompletionChoice};
+use crate::view::CliView;
 use cursive::align::Align;
-use cursive::event::{
-    Callback, Event, EventResult, Key, MouseButton, MouseEvent,
-};
-use cursive::view::scroll;
+use cursive::event::{Callback, Event, EventResult, Key, MouseButton, MouseEvent};
 use cursive::impl_scroller;
-use cursive::Printer;
+use cursive::view::scroll;
 use cursive::view::View;
+use cursive::Printer;
 use cursive::Rect;
 use cursive::Vec2;
 use cursive::With;
 use std::rc::Rc;
-use crate::autocomplete::{autocomplete, CompletionChoice};
-use crate::view::CliView;
 
 pub struct AutocompletePopup {
     input: Rc<String>,
@@ -92,7 +90,7 @@ impl AutocompletePopup {
                             log::debug!("Popup callback");
                             view.insert(ch);
                         });
-                    })
+                    });
                 } else {
                     self.dismiss()
                 }
@@ -159,7 +157,7 @@ impl AutocompletePopup {
         })
     }
 
-   fn inner_on_event(&mut self, event: Event) -> EventResult {
+    fn inner_on_event(&mut self, event: Event) -> EventResult {
         match event {
             Event::Key(Key::Up) => self.scroll_up(1, true),
             Event::Key(Key::PageUp) => self.scroll_up(5, false),
@@ -167,9 +165,7 @@ impl AutocompletePopup {
             Event::Key(Key::PageDown) => self.scroll_down(5, false),
 
             Event::Key(Key::Home) => self.focus = 0,
-            Event::Key(Key::End) => {
-                self.focus = self.choices.len().saturating_sub(1)
-            }
+            Event::Key(Key::End) => self.focus = self.choices.len().saturating_sub(1),
 
             Event::Key(Key::Enter) => {
                 return self.submit();
@@ -183,8 +179,7 @@ impl AutocompletePopup {
                 if let Some(position) = position.checked_sub(offset) {
                     // Now `position` is relative to the top-left of the content.
                     let focus = position.y;
-                    if focus < self.choices.len()
-                    {
+                    if focus < self.choices.len() {
                         self.focus = focus;
                     }
                 }
@@ -194,9 +189,9 @@ impl AutocompletePopup {
                 position,
                 offset,
             } if position
-                    .checked_sub(offset)
-                    .map(|position| position.y == self.focus)
-                    .unwrap_or(false) =>
+                .checked_sub(offset)
+                .map(|position| position.y == self.focus)
+                .unwrap_or(false) =>
             {
                 return self.submit();
             }
@@ -213,7 +208,7 @@ impl AutocompletePopup {
     }
 
     fn inner_required_size(&mut self, _req: Vec2) -> Vec2 {
-       let w = 2 + self
+        let w = 2 + self
             .choices
             .iter()
             .map(|x| x.label.len())
@@ -232,9 +227,7 @@ impl AutocompletePopup {
 
         Rect::from_size((0, self.focus), (size.x, 1))
     }
-
 }
-
 
 impl View for AutocompletePopup {
     fn draw(&self, printer: &Printer) {
@@ -248,12 +241,7 @@ impl View for AutocompletePopup {
         let printer = &printer.offset((0, offset));
 
         // Start with a box
-        scroll::draw_box_frame(
-            self,
-            &printer,
-            |_s, _y| false,
-            |_s, _x| false,
-        );
+        scroll::draw_box_frame(self, &printer, |_s, _y| false, |_s, _x| false);
 
         // We're giving it a reduced size because of borders.
         let printer = printer.shrinked_centered((2, 2));
@@ -298,10 +286,7 @@ impl View for AutocompletePopup {
                     // They can be on the border, or entirely outside of the popup.
 
                     // Mouse clicks outside of the popup should dismiss it.
-                    if !position.fits_in_rect(
-                        offset,
-                        self.scroll_core.last_outer_size() + (2, 2),
-                    ) {
+                    if !position.fits_in_rect(offset, self.scroll_core.last_outer_size() + (2, 2)) {
                         let dismiss_cb = self.on_dismiss.clone();
                         return EventResult::with_cb(move |s| {
                             if let Some(ref cb) = dismiss_cb {

@@ -7,16 +7,16 @@ paul@ezvan.fr
 This software is a computer program whose purpose is to provide a terminal file explorer.
 
 This software is governed by the CeCILL license under French law and
-abiding by the rules of distribution of free software.  You can  use, 
+abiding by the rules of distribution of free software.  You can  use,
 modify and/ or redistribute the software under the terms of the CeCILL
 license as circulated by CEA, CNRS and INRIA at the following URL
-"http://www.cecill.info". 
+"http://www.cecill.info".
 
 As a counterpart to the access to the source code and  rights to copy,
 modify and redistribute granted by the license, users are provided only
 with a limited warranty  and the software's author,  the holder of the
 economic rights,  and the successive licensors  have only  limited
-liability. 
+liability.
 
 In this respect, the user's attention is drawn to the risks associated
 with loading,  using,  modifying and/or developing or reproducing the
@@ -25,9 +25,9 @@ that may mean  that it is complicated to manipulate,  and  that  also
 therefore means  that it is reserved for developers  and  experienced
 professionals having in-depth computer knowledge. Users are therefore
 encouraged to load and test the software's suitability as regards their
-requirements in conditions enabling the security of their systems and/or 
-data to be ensured and,  more generally, to use and operate it in the 
-same conditions as regards security. 
+requirements in conditions enabling the security of their systems and/or
+data to be ensured and,  more generally, to use and operate it in the
+same conditions as regards security.
 
 The fact that you are presently reading this means that you have had
 knowledge of the CeCILL license and that you accept its terms.
@@ -65,15 +65,14 @@ impl PartialOrd for CompletionChoice {
     }
 }
 
-
 pub mod autocomplete {
-    use anyhow::Result;
-    use std::os::unix::fs::PermissionsExt;
     use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
+    use anyhow::Result;
     use std::ffi::OsString;
-    use std::{env, error, io, fmt, fs};
+    use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
+    use std::{env, error, fmt, fs, io};
 
     enum CompletionType {
         Executable,
@@ -84,12 +83,11 @@ pub mod autocomplete {
     #[derive(Clone, Debug)]
     struct CommandArguments {
         command: String,
-        arguments: Vec<String>
+        arguments: Vec<String>,
     }
 
-
     impl fmt::Display for CommandArguments {
-        fn fmt(&self, f:&mut fmt::Formatter<'_>) -> fmt::Result {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             write!(f, "{} {}", self.command, self.arguments.join(" "))
         }
     }
@@ -117,15 +115,14 @@ pub mod autocomplete {
     pub fn autocomplete(command: &str) -> Result<Vec<CompletionChoice>> {
         let command_args = build_command_arguments(command);
         let mut choices: Vec<CompletionChoice> = match get_completion_type(&command_args) {
-            CompletionType::File => {
-                autocomplete_path(command_args, None)?
-            },
-            CompletionType::Executable => {
-                userenv::path().split(":")
-                    .filter_map(|path| executables_in_path_with_prefix(path, &command_args.command).ok())
-                    .flatten()
-                    .collect::<Vec<CompletionChoice>>()
-            }
+            CompletionType::File => autocomplete_path(command_args, None)?,
+            CompletionType::Executable => userenv::path()
+                .split(":")
+                .filter_map(|path| {
+                    executables_in_path_with_prefix(path, &command_args.command).ok()
+                })
+                .flatten()
+                .collect::<Vec<CompletionChoice>>(),
         };
         choices.sort();
         choices.dedup();
@@ -151,10 +148,7 @@ pub mod autocomplete {
                 arguments.push(item.to_string());
             }
         }
-        CommandArguments {
-            command,
-            arguments
-        }
+        CommandArguments { command, arguments }
     }
 
     fn executables_in_path_with_prefix(path: &str, prefix: &str) -> Result<Vec<CompletionChoice>> {
@@ -169,30 +163,29 @@ pub mod autocomplete {
         let completions = paths
             .iter()
             .filter(|(p, _name)| p.starts_with(prefix))
-            .filter_map(|(p, name)| {
-                match p.metadata() {
-                    Ok(metadata) => Some((metadata, name)),
-                    Err(err) => {
-                        log::error!("Cannot read metadata: {:?}", err);
-                        None
-                    }
+            .filter_map(|(p, name)| match p.metadata() {
+                Ok(metadata) => Some((metadata, name)),
+                Err(err) => {
+                    log::error!("Cannot read metadata: {:?}", err);
+                    None
                 }
             })
             .filter(|(metadata, _name)| {
                 let permissions = metadata.permissions();
                 permissions.mode() & 0o111 != 0
             })
-            .map(|(_p, name)| CompletionChoice{
+            .map(|(_p, name)| CompletionChoice {
                 label: name.to_string(),
-                completion: name.to_string()
+                completion: name.to_string(),
             })
             .collect::<Vec<CompletionChoice>>();
         Ok(completions)
-
     }
 
-
-    fn autocomplete_path(command_args: CommandArguments, current_dir: Option<PathBuf>) -> Result<Vec<CompletionChoice>> {
+    fn autocomplete_path(
+        command_args: CommandArguments,
+        current_dir: Option<PathBuf>,
+    ) -> Result<Vec<CompletionChoice>> {
         log::debug!("Autocompleting path: {:?}", command_args);
         let empty_arg = String::from("");
         let current_arg = match command_args.arguments.last().clone() {
@@ -214,9 +207,9 @@ pub mod autocomplete {
         let completions = paths
             .iter()
             .filter(|p| p.starts_with(current_arg))
-            .map(|p| CompletionChoice{
+            .map(|p| CompletionChoice {
                 label: p.to_string(),
-                completion: path_full_completion(command_args.clone(), p.to_string())
+                completion: path_full_completion(command_args.clone(), p.to_string()),
             })
             .collect::<Vec<CompletionChoice>>();
         Ok(completions)
@@ -246,16 +239,19 @@ pub mod autocomplete {
             };
             let mut results = autocomplete_path(test_args, Some(test_path)).unwrap();
             results.sort();
-            assert_eq!(results, vec![
-                CompletionChoice{
-                    label: String::from("a"),
-                    completion: String::from("ls a"),
-                },
-                CompletionChoice{
-                    label: String::from("b"),
-                    completion: String::from("ls b"),
-                },
-            ]);
+            assert_eq!(
+                results,
+                vec![
+                    CompletionChoice {
+                        label: String::from("a"),
+                        completion: String::from("ls a"),
+                    },
+                    CompletionChoice {
+                        label: String::from("b"),
+                        completion: String::from("ls b"),
+                    },
+                ]
+            );
             fs::remove_dir_all("/tmp/manette").unwrap();
         }
     }

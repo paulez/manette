@@ -56,7 +56,9 @@ pub mod run {
             false => match tokens[0] {
                 "cd" => run_cd(tokens[1..].to_vec(), s),
                 "ls" => run_ls(tokens[1..].to_vec(), s),
-                "emacs" | "vim" | "less" => run_detached_command(tokens[0], tokens[1..].to_vec(), s),
+                "emacs" | "vim" | "less" => {
+                    run_detached_command(tokens[0], tokens[1..].to_vec(), s)
+                }
                 _ => {
                     let output = Command::new("/bin/sh").arg("-c").arg(command).output();
                     match output {

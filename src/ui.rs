@@ -36,8 +36,8 @@ knowledge of the CeCILL license and that you accept its terms.
 
 pub mod update {
 
-    use cursive::event::EventResult;
     use cursive::event::Event;
+    use cursive::event::EventResult;
     use cursive::{
         theme::{BaseColor, Color},
         utils::markup::StyledString,
@@ -93,16 +93,14 @@ pub mod update {
                 run::submit_file(s, selection);
             });
 
-            let on_event = OnEventView::new(select)
-                .on_event_inner('e', |sel: &mut SelectView, _e: &Event| {
+            let on_event =
+                OnEventView::new(select).on_event_inner('e', |sel: &mut SelectView, _e: &Event| {
                     log::debug!("Pressed e");
                     let selection = sel.selection();
                     match selection {
-                        Some(selection) => {
-                            Some(EventResult::with_cb(move |s| {
-                                run::edit_file(s, &selection);
-                            }))
-                        }
+                        Some(selection) => Some(EventResult::with_cb(move |s| {
+                            run::edit_file(s, &selection);
+                        })),
                         None => None,
                     }
                 });
@@ -137,9 +135,6 @@ pub mod update {
             ));
         });
     }
-
-
-
 
     fn clear_output_layers(layout: &mut LinearLayout) {
         let children_names = ["command_output", "command_error", "filelist_view"];

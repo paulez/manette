@@ -34,16 +34,16 @@ knowledge of the CeCILL license and that you accept its terms.
 
 */
 
+use crate::autocomplete::{autocomplete, CompletionChoice};
+use crate::autocompleteview::AutocompletePopup;
 use cursive::direction::Direction;
 use cursive::event::{Callback, Event, EventResult, Key};
 use cursive::theme::{ColorStyle, Effect};
-use cursive::{Cursive, Printer, View, With, XY};
 use cursive::view::Position;
+use cursive::{Cursive, Printer, View, With, XY};
 use std::rc::Rc;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-use crate::autocomplete::{autocomplete, CompletionChoice};
-use crate::autocompleteview::AutocompletePopup;
 
 pub struct CliView {
     // Current content
@@ -98,7 +98,6 @@ impl CliView {
         self.on_submit = Some(Rc::new(callback));
     }
 
-
     // Allows setting the on_submit callback when creating
     // the view
     pub fn on_submit<F>(self, callback: F) -> Self
@@ -121,7 +120,6 @@ impl CliView {
         self.cursor = cursor;
     }
 
-
     fn autocomplete_popup(&mut self, choices: Vec<CompletionChoice>) -> EventResult {
         log::debug!("Creating autocomplete popup");
         let offset = XY::new(3, 4);
@@ -130,7 +128,7 @@ impl CliView {
         EventResult::with_cb(move |s| {
             s.screen_mut().add_layer_at(
                 Position::absolute(offset),
-                AutocompletePopup::new(content.clone(), Rc::new(choices.clone()))
+                AutocompletePopup::new(content.clone(), Rc::new(choices.clone())),
             );
         })
     }
@@ -155,9 +153,7 @@ impl CliView {
     }
 }
 
-
 impl View for CliView {
-
     fn draw(&self, printer: &Printer) {
         let width = self.content.width();
         printer.with_color(ColorStyle::primary(), |printer| {
@@ -206,9 +202,7 @@ impl View for CliView {
                     cb(s, &content);
                 })
             }
-            Event::Key(Key::Tab) => {
-                self.autocomplete()
-            }
+            Event::Key(Key::Tab) => self.autocomplete(),
             _ => {
                 log::debug!("Got unknown event {:?}", event);
                 EventResult::Ignored
