@@ -201,9 +201,20 @@ pub mod autocomplete {
             .collect::<Result<Vec<_>, io::Error>>()?;
         let paths = paths
             .iter()
-            .filter_map(|p| p.file_name())
-            .filter_map(|name| name.to_str())
-            .collect::<Vec<&str>>();
+            .filter_map(|path| match path.file_name() {
+                Some(name) => match name.to_str() {
+                    Some(name) => {
+                        if path.is_dir() {
+                            Some(format!("{}/", name))
+                        } else {
+                            Some(name.to_string())
+                        }
+                    }
+                    None => None,
+                },
+                None => None,
+            })
+            .collect::<Vec<String>>();
         let completions = paths
             .iter()
             .filter(|p| p.starts_with(current_arg))
@@ -229,6 +240,7 @@ pub mod autocomplete {
         use super::*;
         #[test]
         fn test_autocomplete_path() {
+            //TODO: use random dir name
             fs::create_dir_all("/tmp/manette/test").unwrap();
             fs::write("/tmp/manette/test/a", "").unwrap();
             fs::write("/tmp/manette/test/b", "").unwrap();
@@ -237,21 +249,33 @@ pub mod autocomplete {
                 command: String::from("ls"),
                 arguments: vec![],
             };
-            let mut results = autocomplete_path(test_args, Some(test_path)).unwrap();
+            let mut results =
+                autocomplete_path(test_args.clone(), Some(test_path.clone())).unwrap();
             results.sort();
-            assert_eq!(
-                results,
-                vec![
-                    CompletionChoice {
-                        label: String::from("a"),
-                        completion: String::from("ls a"),
-                    },
-                    CompletionChoice {
-                        label: String::from("b"),
-                        completion: String::from("ls b"),
-                    },
-                ]
-            );
+            let mut expected_results = vec![
+                CompletionChoice {
+                    label: String::from("a"),
+                    completion: String::from("ls a"),
+                },
+                CompletionChoice {
+                    label: String::from("b"),
+                    completion: String::from("ls b"),
+                },
+            ];
+            assert_eq!(results, expected_results,);
+
+            // add a directory in completion choices
+            fs::create_dir("/tmp/manette/test/dir").unwrap();
+            let mut results =
+                autocomplete_path(test_args.clone(), Some(test_path.clone())).unwrap();
+            results.sort();
+
+            expected_results.push(CompletionChoice {
+                label: String::from("dir/"),
+                completion: String::from("ls dir/"),
+            });
+            assert_eq!(results, expected_results,);
+            //TODO: always cleanup
             fs::remove_dir_all("/tmp/manette").unwrap();
         }
     }
