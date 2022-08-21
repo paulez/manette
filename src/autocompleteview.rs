@@ -167,7 +167,7 @@ impl AutocompletePopup {
             Event::Key(Key::Home) => self.focus = 0,
             Event::Key(Key::End) => self.focus = self.choices.len().saturating_sub(1),
 
-            Event::Key(Key::Enter) => {
+            Event::Key(Key::Tab) => {
                 return self.submit();
             }
             Event::Mouse {
