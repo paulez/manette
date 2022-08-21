@@ -338,8 +338,7 @@ pub mod autocomplete {
                 command: String::from("ls"),
                 arguments: vec![format!("{}/", test_dir)],
             };
-            let mut results =
-                autocomplete_path(test_args.clone(), None).unwrap();
+            let mut results = autocomplete_path(test_args.clone(), None).unwrap();
             results.sort();
             let expected_results = vec![
                 CompletionChoice {
@@ -363,15 +362,12 @@ pub mod autocomplete {
                 command: String::from("ls"),
                 arguments: vec![format!("/tm")],
             };
-            let mut results =
-                autocomplete_path(test_args.clone(), None).unwrap();
+            let mut results = autocomplete_path(test_args.clone(), None).unwrap();
             results.sort();
-            let expected_results = vec![
-                CompletionChoice {
-                    label: format!("/tmp/"),
-                    completion: format!("ls /tmp/"),
-                },
-            ];
+            let expected_results = vec![CompletionChoice {
+                label: format!("/tmp/"),
+                completion: format!("ls /tmp/"),
+            }];
             assert_eq!(results, expected_results,);
         }
 
