@@ -201,19 +201,7 @@ pub mod autocomplete {
             .collect::<Result<Vec<_>, io::Error>>()?;
         let paths = paths
             .iter()
-            .filter_map(|path| match path.file_name() {
-                Some(name) => match name.to_str() {
-                    Some(name) => {
-                        if path.is_dir() {
-                            Some(format!("{}/", name))
-                        } else {
-                            Some(name.to_string())
-                        }
-                    }
-                    None => None,
-                },
-                None => None,
-            })
+            .filter_map(|path| path_to_name(path))
             .collect::<Vec<String>>();
         let completions = paths
             .iter()
@@ -233,6 +221,29 @@ pub mod autocomplete {
         args.arguments.push(completion);
         log::debug!("Pushing completion: {:?}", args.to_string());
         args.to_string()
+    }
+
+    fn directory_from_path(path: String) -> String {
+        match path.rfind("/") {
+            None => String::from(""),
+            Some(last_slash) => path.split_at(last_slash).0.to_string(),
+        }
+    }
+
+    fn path_to_name(path: &PathBuf) -> Option<String> {
+        match path.file_name() {
+            Some(name) => match name.to_str() {
+                Some(name) => {
+                    if path.is_dir() {
+                        Some(format!("{}/", name))
+                    } else {
+                        Some(name.to_string())
+                    }
+                }
+                None => None,
+            },
+            None => None,
+        }
     }
 
     #[cfg(test)]
@@ -277,6 +288,21 @@ pub mod autocomplete {
             assert_eq!(results, expected_results,);
             //TODO: always cleanup
             fs::remove_dir_all("/tmp/manette").unwrap();
+        }
+
+        #[test]
+        fn test_directory_from_path() {
+            assert_eq!(
+                directory_from_path(String::from("a/b/c/d")),
+                String::from("a/b/c")
+            );
+            assert_eq!(directory_from_path(String::from("abcd")), String::from(""));
+        }
+
+        #[test]
+        fn test_path_to_name() {
+            let test_path = PathBuf::from("/tmp");
+            assert_eq!(path_to_name(&test_path).unwrap(), String::from("tmp/"));
         }
     }
 }
