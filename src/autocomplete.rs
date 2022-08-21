@@ -69,6 +69,7 @@ pub mod autocomplete {
     use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
     use anyhow::Result;
+    use cursive::With;
     use std::ffi::OsString;
     use std::os::unix::fs::PermissionsExt;
     use std::path::PathBuf;
@@ -192,17 +193,29 @@ pub mod autocomplete {
             Some(arg) => arg,
             None => &empty_arg,
         };
-        let current_dir = match current_dir {
+        let mut current_dir = match current_dir {
             None => env::current_dir()?,
             Some(path) => path,
         };
+        let prefix = directory_from_path(current_arg);
+        match prefix {
+            None => (),
+            Some(ref prefix_dir) => current_dir.push(prefix_dir.clone()),
+        }
+        log::debug!("Listing dir: {:?}", current_dir);
         let paths = fs::read_dir(current_dir)?
             .map(|res| res.map(|e| e.path()))
             .collect::<Result<Vec<_>, io::Error>>()?;
+        log::debug!("Paths read: {:?}", paths);
         let paths = paths
             .iter()
             .filter_map(|path| path_to_name(path))
+            .map(|path| match prefix {
+                None => path,
+                Some(ref prefix_dir) => format!("{}/{}", prefix_dir.clone(), path),
+            })
             .collect::<Vec<String>>();
+        log::debug!("Path strings: {:?}", paths);
         let completions = paths
             .iter()
             .filter(|p| p.starts_with(current_arg))
@@ -223,10 +236,10 @@ pub mod autocomplete {
         args.to_string()
     }
 
-    fn directory_from_path(path: String) -> String {
+    fn directory_from_path(path: &String) -> Option<String> {
         match path.rfind("/") {
-            None => String::from(""),
-            Some(last_slash) => path.split_at(last_slash).0.to_string(),
+            None => None,
+            Some(last_slash) => Some(path.split_at(last_slash).0.to_string()),
         }
     }
 
@@ -286,6 +299,29 @@ pub mod autocomplete {
                 completion: String::from("ls dir/"),
             });
             assert_eq!(results, expected_results,);
+
+            // list files in subdir
+            fs::write("/tmp/manette/test/dir/a", "").unwrap();
+            fs::write("/tmp/manette/test/dir/b", "").unwrap();
+            let test_args = CommandArguments {
+                command: String::from("ls"),
+                arguments: vec![String::from("dir/")],
+            };
+            let mut results =
+                autocomplete_path(test_args.clone(), Some(test_path.clone())).unwrap();
+            results.sort();
+            let expected_results = vec![
+                CompletionChoice {
+                    label: String::from("dir/a"),
+                    completion: String::from("ls dir/a"),
+                },
+                CompletionChoice {
+                    label: String::from("dir/b"),
+                    completion: String::from("ls dir/b"),
+                },
+            ];
+            assert_eq!(results, expected_results,);
+
             //TODO: always cleanup
             fs::remove_dir_all("/tmp/manette").unwrap();
         }
@@ -293,10 +329,10 @@ pub mod autocomplete {
         #[test]
         fn test_directory_from_path() {
             assert_eq!(
-                directory_from_path(String::from("a/b/c/d")),
-                String::from("a/b/c")
+                directory_from_path(&String::from("a/b/c/d")),
+                Some(String::from("a/b/c"))
             );
-            assert_eq!(directory_from_path(String::from("abcd")), String::from(""));
+            assert_eq!(directory_from_path(&String::from("abcd")), None);
         }
 
         #[test]
