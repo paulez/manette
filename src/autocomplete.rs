@@ -198,6 +198,7 @@ pub mod autocomplete {
             Some(path) => path,
         };
         let prefix = directory_from_path(current_arg);
+        log::debug!("Prefix is {:?}", prefix);
         match prefix {
             None => (),
             Some(ref prefix_dir) => current_dir.push(prefix_dir.clone()),
@@ -212,7 +213,7 @@ pub mod autocomplete {
             .filter_map(|path| path_to_name(path))
             .map(|path| match prefix {
                 None => path,
-                Some(ref prefix_dir) => format!("{}/{}", prefix_dir.clone(), path),
+                Some(ref prefix_dir) => prefix_dir.clone() + &path,
             })
             .collect::<Vec<String>>();
         log::debug!("Path strings: {:?}", paths);
@@ -239,7 +240,7 @@ pub mod autocomplete {
     fn directory_from_path(path: &String) -> Option<String> {
         match path.rfind("/") {
             None => None,
-            Some(last_slash) => Some(path.split_at(last_slash).0.to_string()),
+            Some(last_slash) => Some(path.split_at(last_slash + 1).0.to_string()),
         }
     }
 
@@ -327,10 +328,58 @@ pub mod autocomplete {
         }
 
         #[test]
+        fn test_autocomplete_path_absolute() {
+            //TODO: use random dir name
+            let test_dir = String::from("/tmp/manette-sub/test");
+            fs::create_dir_all(test_dir.clone()).unwrap();
+            fs::write(format!("{}/a", test_dir), "").unwrap();
+            fs::write(format!("{}/b", test_dir), "").unwrap();
+            let test_args = CommandArguments {
+                command: String::from("ls"),
+                arguments: vec![format!("{}/", test_dir)],
+            };
+            let mut results =
+                autocomplete_path(test_args.clone(), None).unwrap();
+            results.sort();
+            let expected_results = vec![
+                CompletionChoice {
+                    label: format!("{}/a", test_dir),
+                    completion: format!("ls {}/a", test_dir),
+                },
+                CompletionChoice {
+                    label: format!("{}/b", test_dir),
+                    completion: format!("ls {}/b", test_dir),
+                },
+            ];
+            assert_eq!(results, expected_results,);
+
+            //TODO: always cleanup
+            fs::remove_dir_all("/tmp/manette-sub").unwrap();
+        }
+
+        #[test]
+        fn test_autocomplete_path_root() {
+            let test_args = CommandArguments {
+                command: String::from("ls"),
+                arguments: vec![format!("/tm")],
+            };
+            let mut results =
+                autocomplete_path(test_args.clone(), None).unwrap();
+            results.sort();
+            let expected_results = vec![
+                CompletionChoice {
+                    label: format!("/tmp/"),
+                    completion: format!("ls /tmp/"),
+                },
+            ];
+            assert_eq!(results, expected_results,);
+        }
+
+        #[test]
         fn test_directory_from_path() {
             assert_eq!(
                 directory_from_path(&String::from("a/b/c/d")),
-                Some(String::from("a/b/c"))
+                Some(String::from("a/b/c/"))
             );
             assert_eq!(directory_from_path(&String::from("abcd")), None);
         }
