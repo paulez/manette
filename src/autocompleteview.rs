@@ -77,20 +77,17 @@ impl AutocompletePopup {
         let choices = autocomplete::autocomplete(&self.input);
         match choices {
             Ok(choices) => {
-                if choices.len() > 0 {
+                if !choices.is_empty() {
                     let focused_item = &self.choices[self.focus];
-                    let new_focus = match choices.iter().position(|r| r == focused_item) {
-                        Some(focus) => focus,
-                        None => 0,
-                    };
+                    let new_focus = choices.iter().position(|r| r == focused_item).unwrap_or(0);
                     self.focus = new_focus;
                     self.choices = Rc::new(choices);
-                    return EventResult::with_cb(move |s| {
+                    EventResult::with_cb(move |s| {
                         s.call_on_name("cli_input", |view: &mut CliView| {
                             log::debug!("Popup callback");
                             view.insert(ch);
                         });
-                    });
+                    })
                 } else {
                     self.dismiss()
                 }
@@ -241,7 +238,7 @@ impl View for AutocompletePopup {
         let printer = &printer.offset((0, offset));
 
         // Start with a box
-        scroll::draw_box_frame(self, &printer, |_s, _y| false, |_s, _x| false);
+        scroll::draw_box_frame(self, printer, |_s, _y| false, |_s, _x| false);
 
         // We're giving it a reduced size because of borders.
         let printer = printer.shrinked_centered((2, 2));

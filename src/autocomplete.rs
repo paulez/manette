@@ -69,10 +69,9 @@ pub mod autocomplete {
     use crate::autocomplete::CompletionChoice;
     use crate::userenv::userenv;
     use anyhow::Result;
-    use cursive::With;
     use std::ffi::OsString;
     use std::os::unix::fs::PermissionsExt;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::{env, error, fmt, fs, io};
 
     enum CompletionType {
@@ -118,7 +117,7 @@ pub mod autocomplete {
         let mut choices: Vec<CompletionChoice> = match get_completion_type(&command_args) {
             CompletionType::File => autocomplete_path(command_args, None)?,
             CompletionType::Executable => userenv::path()
-                .split(":")
+                .split(':')
                 .filter_map(|path| {
                     executables_in_path_with_prefix(path, &command_args.command).ok()
                 })
@@ -131,7 +130,7 @@ pub mod autocomplete {
     }
 
     fn get_completion_type(command_args: &CommandArguments) -> CompletionType {
-        if command_args.arguments.len() > 0 {
+        if !command_args.arguments.is_empty() {
             CompletionType::File
         } else {
             CompletionType::Executable
@@ -139,7 +138,7 @@ pub mod autocomplete {
     }
 
     fn build_command_arguments(input_command: &str) -> CommandArguments {
-        let items: Vec<&str> = input_command.split(" ").collect();
+        let items: Vec<&str> = input_command.split(' ').collect();
         let mut arguments: Vec<String> = Vec::new();
         let mut command: String = String::new();
         for (i, item) in items.iter().enumerate() {
@@ -189,7 +188,7 @@ pub mod autocomplete {
     ) -> Result<Vec<CompletionChoice>> {
         log::debug!("Autocompleting path: {:?}", command_args);
         let empty_arg = String::from("");
-        let current_arg = match command_args.arguments.last().clone() {
+        let current_arg = match command_args.arguments.last() {
             Some(arg) => arg,
             None => &empty_arg,
         };
@@ -229,7 +228,7 @@ pub mod autocomplete {
     }
 
     fn path_full_completion(mut args: CommandArguments, completion: String) -> String {
-        if args.arguments.len() > 0 {
+        if !args.arguments.is_empty() {
             args.arguments.pop();
         }
         args.arguments.push(completion);
@@ -237,14 +236,11 @@ pub mod autocomplete {
         args.to_string()
     }
 
-    fn directory_from_path(path: &String) -> Option<String> {
-        match path.rfind("/") {
-            None => None,
-            Some(last_slash) => Some(path.split_at(last_slash + 1).0.to_string()),
-        }
+    fn directory_from_path(path: &str) -> Option<String> {
+        path.rfind('/').map(|last_slash| path.split_at(last_slash + 1).0.to_string())
     }
 
-    fn path_to_name(path: &PathBuf) -> Option<String> {
+    fn path_to_name(path: &Path) -> Option<String> {
         match path.file_name() {
             Some(name) => match name.to_str() {
                 Some(name) => {

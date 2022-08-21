@@ -139,7 +139,7 @@ impl CliView {
         log::debug!("Autocompleting with choices {:?}", completion);
         match completion {
             Ok(completion) => {
-                if completion.len() > 0 {
+                if !completion.is_empty() {
                     self.autocomplete_popup(completion)
                 } else {
                     EventResult::Consumed(None)
