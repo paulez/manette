@@ -41,7 +41,7 @@ use manette::Config;
 
 fn main() {
     let matches = App::new("Manette")
-        .version("0.1")
+        .version("0.2")
         .author("Paul Ezvan <paul@ezvan.fr>")
         .about("Terminal file explorer and command runner")
         .arg(
