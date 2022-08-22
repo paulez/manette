@@ -79,7 +79,7 @@ impl CliView {
         Callback::dummy()
     }
 
-    fn backspace(&mut self) -> EventResult {
+    pub fn backspace(&mut self) -> EventResult {
         let len = self.content[..self.cursor]
             .graphemes(true)
             .last()
@@ -129,7 +129,7 @@ impl CliView {
             s.screen_mut().add_layer_at(
                 Position::absolute(offset),
                 AutocompletePopup::new(content.clone(), Rc::new(choices.clone())),
-            );
+            )
         })
     }
 

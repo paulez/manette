@@ -97,9 +97,11 @@ pub mod update {
                 OnEventView::new(select).on_event_inner('e', |sel: &mut SelectView, _e: &Event| {
                     log::debug!("Pressed e");
                     let selection = sel.selection();
-                    selection.map(|selection| EventResult::with_cb(move |s| {
-                        run::edit_file(s, &selection);
-                    }))
+                    selection.map(|selection| {
+                        EventResult::with_cb(move |s| {
+                            run::edit_file(s, &selection);
+                        })
+                    })
                 });
 
             layout.add_child(ResizedView::with_full_screen(

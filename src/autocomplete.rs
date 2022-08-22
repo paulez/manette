@@ -237,7 +237,8 @@ pub mod autocomplete {
     }
 
     fn directory_from_path(path: &str) -> Option<String> {
-        path.rfind('/').map(|last_slash| path.split_at(last_slash + 1).0.to_string())
+        path.rfind('/')
+            .map(|last_slash| path.split_at(last_slash + 1).0.to_string())
     }
 
     fn path_to_name(path: &Path) -> Option<String> {

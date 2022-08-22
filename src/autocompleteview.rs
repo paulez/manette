@@ -99,6 +99,15 @@ impl AutocompletePopup {
         }
     }
 
+    fn backspace(&mut self) -> EventResult {
+        EventResult::with_cb(move |s| {
+            s.screen_mut().pop_layer();
+            s.call_on_name("cli_input", |view: &mut CliView| {
+                view.backspace();
+            });
+        })
+    }
+
     fn scroll_up(&mut self, mut n: usize, cycle: bool) {
         while n > 0 {
             if self.focus > 0 {
@@ -144,7 +153,7 @@ impl AutocompletePopup {
         })
     }
 
-    fn dismiss(&mut self) -> EventResult {
+    pub fn dismiss(&mut self) -> EventResult {
         let dismiss_cb = self.on_dismiss.clone();
         EventResult::with_cb(move |s| {
             if let Some(ref cb) = dismiss_cb {
@@ -166,6 +175,12 @@ impl AutocompletePopup {
 
             Event::Key(Key::Tab) => {
                 return self.submit();
+            }
+            Event::Key(Key::Enter) => {
+                return self.submit();
+            }
+            Event::Key(Key::Backspace) => {
+                return self.backspace();
             }
             Event::Mouse {
                 event: MouseEvent::Press(_),

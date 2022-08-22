@@ -10,4 +10,3 @@ This is a unordered list of features and taks for the Manette project.
 
 ## Improvements
 
-* Backspace in auto completion popup
